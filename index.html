@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Órbita SAN - Soldadura VR</title>
+  <title>Órbita SAN - Soldadura VR & XR</title>
   
   <!-- Librería de A-Frame VR -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
@@ -80,6 +80,79 @@
       }
     });
 
+    // Componente de generación de chispas y proyecciones dinámicas de soldadura
+    AFRAME.registerComponent('generador-chispas', {
+      schema: {
+        cantidad: {type: 'int', default: 35}
+      },
+      init: function () {
+        for (let i = 0; i < this.data.cantidad; i++) {
+          this.crearChispa();
+        }
+      },
+      crearChispa: function () {
+        const chispa = document.createElement('a-entity');
+        
+        // Geometría aleatoria simulando chispas facetadas incandescentes
+        const tipos = ['octahedron', 'tetrahedron'];
+        const tipo = tipos[Math.floor(Math.random() * tipos.length)];
+        chispa.setAttribute('geometry', {
+          primitive: tipo,
+          radius: 0.015 + Math.random() * 0.03
+        });
+
+        // Colores de arco eléctrico (Cian/Azul plasma y dorado incandescente)
+        const colores = ['#4df0ff', '#e0d070', '#ff6600', '#ffffff'];
+        const color = colores[Math.floor(Math.random() * colores.length)];
+        
+        chispa.setAttribute('material', {
+          color: color,
+          shader: 'flat',
+          transparent: true,
+          opacity: 0.8
+        });
+
+        // Posición inicial cerca del núcleo central
+        const x = (Math.random() - 0.5) * 0.4;
+        const y = 0.5 + Math.random() * 0.4;
+        const z = (Math.random() - 0.5) * 0.4;
+        chispa.setAttribute('position', `${x} ${y} ${z}`);
+
+        // Animación de dispersión, rotación y desvanecimiento
+        const tx = x + (Math.random() - 0.5) * 2.5;
+        const ty = y + 1.2 + Math.random() * 1.5;
+        const tz = z + (Math.random() - 0.5) * 2.5;
+        const dur = 2500 + Math.random() * 3500;
+
+        chispa.setAttribute('animation__pos', {
+          property: 'position',
+          to: `${tx} ${ty} ${tz}`,
+          dur: dur,
+          loop: true,
+          easing: 'easeOutQuad'
+        });
+
+        chispa.setAttribute('animation__rot', {
+          property: 'rotation',
+          to: `${Math.random() * 360} ${Math.random() * 360} ${Math.random() * 360}`,
+          dur: dur,
+          loop: true,
+          easing: 'linear'
+        });
+
+        chispa.setAttribute('animation__scl', {
+          property: 'scale',
+          from: '1 1 1',
+          to: '0.01 0.01 0.01',
+          dur: dur,
+          loop: true,
+          easing: 'easeInQuad'
+        });
+
+        this.el.appendChild(chispa);
+      }
+    });
+
     // Componente interactivo para punteros láser de Quest 3 y mouse en PC
     AFRAME.registerComponent('palabra-interactiva', {
       schema: { idConcepto: {type: 'string'} },
@@ -124,6 +197,53 @@
         });
       }
     });
+
+    // Componente para alternar entre el modo VR (Cielo espacial) e XR (Passthrough/Mixto)
+    AFRAME.registerComponent('control-entorno', {
+      schema: { modo: {type: 'string'} },
+      init: function () {
+        var el = this.el;
+        var modo = this.data.modo;
+
+        el.addEventListener('mouseenter', function () {
+          el.setAttribute('scale', '1.1 1.1 1.1');
+        });
+        el.addEventListener('mouseleave', function () {
+          el.setAttribute('scale', '1 1 1');
+        });
+
+        el.addEventListener('click', function () {
+          var scene = document.querySelector('a-scene');
+          var estrellas = document.querySelector('#estrellas');
+          var btnVR = document.querySelector('#btn-vr-active');
+          var btnXR = document.querySelector('#btn-xr-active');
+
+          if (modo === 'xr') {
+            // Desactiva niebla y estrellas para dejar paso limpio al Passthrough real
+            scene.setAttribute('fog', 'density: 0');
+            estrellas.setAttribute('visible', 'false');
+            scene.setAttribute('background', 'transparent: true; color: #000');
+            
+            // Actualización visual de los botones 3D
+            btnVR.setAttribute('color', '#111122');
+            btnXR.setAttribute('color', '#e0d070');
+            btnVR.querySelector('a-text').setAttribute('color', '#ffffff');
+            btnXR.querySelector('a-text').setAttribute('color', '#000000');
+          } else {
+            // Reestablece el espacio cósmico y la atmósfera misteriosa (Modo VR)
+            scene.setAttribute('fog', 'type: exponential; color: #000008; density: 0.06');
+            estrellas.setAttribute('visible', 'true');
+            scene.setAttribute('background', 'color: #000005');
+            
+            // Actualización visual de los botones 3D
+            btnVR.setAttribute('color', '#e0d070');
+            btnXR.setAttribute('color', '#111122');
+            btnVR.querySelector('a-text').setAttribute('color', '#000000');
+            btnXR.querySelector('a-text').setAttribute('color', '#ffffff');
+          }
+        });
+      }
+    });
   </script>
 </head>
 <body>
@@ -141,11 +261,12 @@
 <a-scene background="color:#000005" 
          fog="type: exponential; color: #000008; density: 0.06" 
          renderer="antialias: true; colorManagement: true;"
+         webxr="referenceSpaceType: localFloor; optionalFeatures: pass-through;"
          cursor="rayOrigin: mouse"
          raycaster="objects: .interactable; interval: 100">
   
   <a-assets timeout="15000">
-    <!-- Precarga de todas las tarjetas explicativas diseñadas (cards limpias sin prefijos) -->
+    <!-- Precarga de todas las tarjetas explicativas diseñadas -->
     <img id="card_ac" src="./ac.png">
     <img id="card_arco" src="./arco-electrico.png">
     <img id="card_bano" src="./bano-de-fusion.png">
@@ -172,7 +293,7 @@
     <img id="card_wps" src="./wps.png">
     <img id="card_zat" src="./zat.png">
 
-    <!-- Referencia de audio actualizada al nuevo archivo mp3 de GitHub -->
+    <!-- Referencia de audio actualizada -->
     <audio id="musica-fondo" src="./orbitaSAN.mp3" loop preload="auto"></audio>
     
     <!-- Textura de seguridad de carga provisional -->
@@ -185,6 +306,30 @@
   
   <!-- Espacio estelar dinámico -->
   <a-entity id="estrellas"></a-entity>
+
+  <!-- EFECTOS DE CHISPAS EN EL CENTRO -->
+  <a-entity generador-chispas position="0 0.5 0"></a-entity>
+
+  <!-- PANEL DE SELECCIÓN DE ENTORNO (VR vs XR) -->
+  <!-- Flota a la izquierda del usuario para fácil acceso -->
+  <a-entity id="consola-entorno" position="-1.5 1.5 -1.2" rotation="10 40 0">
+    <a-plane width="1.2" height="0.8" color="#000" opacity="0.9" material="shader:flat">
+      <!-- Borde del panel -->
+      <a-plane width="1.24" height="0.84" color="#e0d070" position="0 0 -0.01" opacity="0.3" material="shader:flat"></a-plane>
+      
+      <a-text value="ENTORNO" font="exo2bold" align="center" color="#e0d070" width="3" position="0 0.28 0.01"></a-text>
+      
+      <!-- Botón Modo VR -->
+      <a-plane id="btn-vr-active" class="interactable" control-entorno="modo: vr" width="0.9" height="0.18" color="#e0d070" position="0 0.05 0.02" material="shader:flat">
+        <a-text value="VR ESPACIO" font="exo2bold" align="center" color="#000" width="2.4"></a-text>
+      </a-plane>
+
+      <!-- Botón Modo XR (Realidad Mixta Passthrough) -->
+      <a-plane id="btn-xr-active" class="interactable" control-entorno="modo: xr" width="0.9" height="0.18" color="#111122" position="0 -0.18 0.02" material="shader:flat">
+        <a-text value="XR MIXTA" font="exo2bold" align="center" color="#fff" width="2.4"></a-text>
+      </a-plane>
+    </a-plane>
+  </a-entity>
 
   <!-- NUBE DE TÉRMINOS FLOTANTES EN 360 GRADOS (Distribución cilíndrica constante) -->
   <a-entity id="nube-palabras" position="0 0 0" visible="false" animation="property: rotation; to: 0 360 0; loop: true; dur: 75000; easing: linear">
@@ -335,7 +480,7 @@
     <!-- 25. ZAT (Ángulo 345.6°) -->
     <a-entity movimiento-vivo position="-0.80 1.9 -3.10" rotation="0 -345.6 0">
       <a-image src="./termino_zat.png" width="1.2" height="0.5" transparent="true"></a-image>
-      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_zat" width="1.6" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_zat" width="1.6" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-entity>
     </a-entity>
 
   </a-entity>
@@ -398,12 +543,25 @@
     }
   }
 
-  // Acceso inmediato si el visor Meta Quest 3 inicia directo en modo VR
+  // Acceso inmediato si el visor Meta Quest 3 inicia directo en modo VR/XR
   document.querySelector('a-scene').addEventListener('enter-vr', () => {
     document.getElementById('pantalla-inicio').style.display = 'none';
     const audio = document.getElementById('musica-fondo');
     if (audio) audio.play().catch(e => {});
     document.getElementById('nube-palabras').setAttribute('visible', 'true');
+
+    // Auto-activar configuración XR si detectamos que ha entrado específicamente en modo AR (Passthrough)
+    var scene = document.querySelector('a-scene');
+    if (scene.is('ar-mode')) {
+      scene.setAttribute('fog', 'density: 0');
+      document.querySelector('#estrellas').setAttribute('visible', 'false');
+      scene.setAttribute('background', 'transparent: true; color: #000');
+      
+      document.querySelector('#btn-vr-active').setAttribute('color', '#111122');
+      document.querySelector('#btn-xr-active').setAttribute('color', '#e0d070');
+      document.querySelector('#btn-vr-active').querySelector('a-text').setAttribute('color', '#ffffff');
+      document.querySelector('#btn-xr-active').querySelector('a-text').setAttribute('color', '#000000');
+    }
   });
 
   window.addEventListener('load', () => { 
