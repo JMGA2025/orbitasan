@@ -24,7 +24,7 @@
   </style>
 
   <script>
-    // Asociación de conceptos con la ID de su tarjeta explicativa precargada en <a-assets>
+    // Mapeo preciso entre el ID de concepto y la ID de la tarjeta explicativa original
     const ASOCIACIONES_SAN = {
       'concept_ac': { cardId: '#card_ac' },
       'concept_arco': { cardId: '#card_arco' },
@@ -53,7 +53,7 @@
       'concept_zat': { cardId: '#card_zat' }
     };
 
-    // Componente de balanceo y flotación sutil e independiente
+    // Componente de oscilación y flotación sutil e independiente
     AFRAME.registerComponent('movimiento-vivo', {
       init: function () {
         this.homePos = new THREE.Vector3().copy(this.el.object3D.position);
@@ -63,7 +63,7 @@
         const el = this.el;
         if (!el) return;
         
-        // Desplazamiento sutil e independiente en ejes X, Y y Z
+        // Desplazamiento sutil e independiente en ejes X, Y y Z para simular flotación
         const targetX = this.homePos.x + (Math.random() - 0.5) * 0.8;
         const targetY = this.homePos.y + (Math.random() - 0.5) * 0.6;
         const targetZ = this.homePos.z + (Math.random() - 0.5) * 0.6;
@@ -87,19 +87,27 @@
         var el = this.el;
         var data = this.data;
 
-        // Efecto Hover: Al pasar el puntero, el término brilla en dorado y se agranda ligeramente
+        // Hover: El término visual brilla en dorado SAN y aumenta su tamaño sutilmente
         el.addEventListener('mouseenter', function () {
-          el.setAttribute('color', '#e0d070'); // Tinta dorado sobre el PNG del término flotante
-          el.setAttribute('scale', '1.25 1.25 1.25');
+          var parent = el.parentNode;
+          var img = parent.querySelector('a-image');
+          if (img) {
+            img.setAttribute('color', '#e0d070');
+            img.setAttribute('scale', '1.25 1.25 1.25');
+          }
         });
 
-        // Efecto Leave: Regresa a su tamaño y color original (blanco limpio)
+        // Leave: Regresa al color y escala originales
         el.addEventListener('mouseleave', function () {
-          el.setAttribute('color', '#ffffff');
-          el.setAttribute('scale', '1 1 1');
+          var parent = el.parentNode;
+          var img = parent.querySelector('a-image');
+          if (img) {
+            img.setAttribute('color', '#ffffff');
+            img.setAttribute('scale', '1 1 1');
+          }
         });
 
-        // Evento de selección (Click / Gatillo del mando VR)
+        // Click / Trigger: Cambia la textura del panel explicativo por la tarjeta correspondiente
         el.addEventListener('click', function () {
           var asociacion = ASOCIACIONES_SAN[data.idConcepto];
           if (!asociacion) return;
@@ -107,7 +115,7 @@
           var panel = document.querySelector('#panel-info-dinamico');
           var cardImagen = document.querySelector('#card-contenido-img');
           
-          // Cambia la textura de la tarjeta de explicación por la ID precargada en caché GPU
+          // Cambia la textura de la tarjeta de explicación por la ID precargada
           cardImagen.setAttribute('src', asociacion.cardId);
           
           // Abre el panel explicativo de manera frontal y fluida
@@ -125,7 +133,7 @@
   <h2>MÓDULO SAN</h2>
   <h1>ÓRBITA SAN</h1>
   <p>Glosario de Soldadura en Atmósfera Natural interactivo.<br>
-  <small style="font-size: 0.85rem; color:#888; margin-top:10px; display:inline-block;">Apunta a las palabras flotantes y pulsa el gatillo de tus mandos de Meta Quest 3.</small></p>
+  <small style="font-size: 0.85rem; color:#888; margin-top:10px; display:inline-block;">Apunta a las palabras flotantes y pulsa el gatillo de tus mandos de Meta Quest 3 o haz clic en PC.</small></p>
   <button id="btn-entrar" onclick="iniciar()">ENTRAR</button>
 </div>
 
@@ -137,32 +145,32 @@
          raycaster="objects: .interactable; interval: 100">
   
   <a-assets timeout="15000">
-    <!-- Precarga de todas las tarjetas de explicación (Cards) -->
-    <img id="card_ac" src="./tarjeta_ac.png">
-    <img id="card_arco" src="./tarjeta_arco.png">
-    <img id="card_bano" src="./tarjeta_bano.png">
-    <img id="card_cordon" src="./tarjeta_cordon.png">
-    <img id="card_dc" src="./tarjeta_dc.png">
-    <img id="card_e6013" src="./tarjeta_e6013.png">
-    <img id="card_e7016" src="./tarjeta_e7016.png">
-    <img id="card_e7018" src="./tarjeta_e7018.png">
-    <img id="card_e7024" src="./tarjeta_e7024.png">
-    <img id="card_electrodo" src="./tarjeta_electrodo.png">
-    <img id="card_escoria" src="./tarjeta_escoria.png">
-    <img id="card_higroscopico" src="./tarjeta_higroscopico.png">
-    <img id="card_intensidad" src="./tarjeta_intensidad.png">
-    <img id="card_ionizacion" src="./tarjeta_ionizacion.png">
-    <img id="card_masa" src="./tarjeta_masa.png">
-    <img id="card_penetracion" src="./tarjeta_penetracion.png">
-    <img id="card_piqueta" src="./tarjeta_piqueta.png">
-    <img id="card_plasma" src="./tarjeta_plasma.png">
-    <img id="card_polaridad" src="./tarjeta_polaridad.png">
-    <img id="card_polaridad_directa" src="./tarjeta_polaridad_directa.png">
-    <img id="card_polaridad_inversa" src="./tarjeta_polaridad_inversa.png">
-    <img id="card_revestimiento" src="./tarjeta_revestimiento.png">
-    <img id="card_tension" src="./tarjeta_tension.png">
-    <img id="card_wps" src="./tarjeta_wps.png">
-    <img id="card_zat" src="./tarjeta_zat.png">
+    <!-- Precarga de todas las tarjetas explicativas diseñadas (cards limpias sin prefijos) -->
+    <img id="card_ac" src="./ac.png">
+    <img id="card_arco" src="./arco-electrico.png">
+    <img id="card_bano" src="./bano-de-fusion.png">
+    <img id="card_cordon" src="./cordon.png">
+    <img id="card_dc" src="./dc.png">
+    <img id="card_e6013" src="./e6013.png">
+    <img id="card_e7016" src="./e7016.png">
+    <img id="card_e7018" src="./e7018.png">
+    <img id="card_e7024" src="./e7024.png">
+    <img id="card_electrodo" src="./electrodo.png">
+    <img id="card_escoria" src="./escoria.png">
+    <img id="card_higroscopico" src="./higroscopico.png">
+    <img id="card_intensidad" src="./intensidad-de-corriente.png">
+    <img id="card_ionizacion" src="./ionizacion.png">
+    <img id="card_masa" src="./masa.png">
+    <img id="card_penetracion" src="./penetracion.png">
+    <img id="card_piqueta" src="./piqueta.png">
+    <img id="card_plasma" src="./plasma.png">
+    <img id="card_polaridad" src="./polaridad.png">
+    <img id="card_polaridad_directa" src="./polaridad-directa-dcminus.png">
+    <img id="card_polaridad_inversa" src="./polaridad-inversa-dcplus.png">
+    <img id="card_revestimiento" src="./revestimiento.png">
+    <img id="card_tension" src="./tension.png">
+    <img id="card_wps" src="./wps.png">
+    <img id="card_zat" src="./zat.png">
 
     <!-- Música de fondo local -->
     <audio id="musica-fondo" src="./ATECA1.mp3" loop preload="auto"></audio>
@@ -178,83 +186,157 @@
   <!-- Espacio estelar dinámico -->
   <a-entity id="estrellas"></a-entity>
 
-  <!-- NUBE DE TÉRMINOS FLOTANTES (PNGs transparentes de palabras distribuidas a 360 grados) -->
-  <a-entity id="nube-palabras" position="0 0 0" visible="false" animation="property: rotation; to: 0 360 0; loop: true; dur: 70000; easing: linear">
+  <!-- NUBE DE TÉRMINOS FLOTANTES EN 360 GRADOS (Distribución cilíndrica constante) -->
+  <a-entity id="nube-palabras" position="0 0 0" visible="false" animation="property: rotation; to: 0 360 0; loop: true; dur: 75000; easing: linear">
     
     <!-- 1. AC (Ángulo 0.0°) -->
-    <a-image src="./termino_ac.png" class="interactable" palabra-interactiva="idConcepto: concept_ac" movimiento-vivo position="0 1.7 -3.2" width="1.2" height="0.4" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="0 1.7 -3.2">
+      <a-image src="./termino_ac.png" width="1.2" height="0.4" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_ac" width="1.6" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
     
     <!-- 2. Arco Eléctrico (Ángulo 14.4°) -->
-    <a-image src="./termino_arco.png" class="interactable" palabra-interactiva="idConcepto: concept_arco" movimiento-vivo position="0.80 1.3 -3.10" rotation="0 -14.4 0" width="1.8" height="0.6" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="0.80 1.3 -3.10" rotation="0 -14.4 0">
+      <a-image src="./termino_arco-electrico.png" width="1.8" height="0.6" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_arco" width="2.2" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
     
     <!-- 3. Baño de Fusión (Ángulo 28.8°) -->
-    <a-image src="./termino_bano.png" class="interactable" palabra-interactiva="idConcepto: concept_bano" movimiento-vivo position="1.54 2.0 -2.80" rotation="0 -28.8 0" width="1.8" height="0.6" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="1.54 2.0 -2.80" rotation="0 -28.8 0">
+      <a-image src="./termino_bano-de-fusion.png" width="1.8" height="0.6" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_bano" width="2.2" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 4. Cordón (Ángulo 43.2°) -->
-    <a-image src="./termino_cordon.png" class="interactable" palabra-interactiva="idConcepto: concept_cordon" movimiento-vivo position="2.19 1.5 -2.33" rotation="0 -43.2 0" width="1.5" height="0.5" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="2.19 1.5 -2.33" rotation="0 -43.2 0">
+      <a-image src="./termino_cordon.png" width="1.5" height="0.5" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_cordon" width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
     
     <!-- 5. DC (Ángulo 57.6°) -->
-    <a-image src="./termino_dc.png" class="interactable" palabra-interactiva="idConcepto: concept_dc" movimiento-vivo position="2.70 1.8 -1.71" rotation="0 -57.6 0" width="1.2" height="0.4" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="2.70 1.8 -1.71" rotation="0 -57.6 0">
+      <a-image src="./termino_dc.png" width="1.2" height="0.4" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_dc" width="1.6" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 6. E6013 (Ángulo 72.0°) -->
-    <a-image src="./termino_e6013.png" class="interactable" palabra-interactiva="idConcepto: concept_e6013" movimiento-vivo position="3.04 1.2 -0.99" rotation="0 -72.0 0" width="1.5" height="0.5" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="3.04 1.2 -0.99" rotation="0 -72.0 0">
+      <a-image src="./termino_e6013.png" width="1.5" height="0.5" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_e6013" width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-entity>
 
     <!-- 7. E7016 (Ángulo 86.4°) -->
-    <a-image src="./termino_e7016.png" class="interactable" palabra-interactiva="idConcepto: concept_e7016" movimiento-vivo position="3.19 2.2 -0.20" rotation="0 -86.4 0" width="1.5" height="0.5" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="3.19 2.2 -0.20" rotation="0 -86.4 0">
+      <a-image src="./termino_e7016.png" width="1.5" height="0.5" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_e7016" width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
     
     <!-- 8. E7018 (Ángulo 100.8°) -->
-    <a-image src="./termino_e7018.png" class="interactable" palabra-interactiva="idConcepto: concept_e7018" movimiento-vivo position="3.14 1.4 0.60" rotation="0 -100.8 0" width="1.5" height="0.5" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="3.14 1.4 0.60" rotation="0 -100.8 0">
+      <a-image src="./termino_e7018.png" width="1.5" height="0.5" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_e7018" width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 9. E7024 (Ángulo 115.2°) -->
-    <a-image src="./termino_e7024.png" class="interactable" palabra-interactiva="idConcepto: concept_e7024" movimiento-vivo position="2.90 1.9 1.36" rotation="0 -115.2 0" width="1.5" height="0.5" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="2.90 1.9 1.36" rotation="0 -115.2 0">
+      <a-image src="./termino_e7024.png" width="1.5" height="0.5" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_e7024" width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 10. Electrodo (Ángulo 129.6°) -->
-    <a-image src="./termino_electrodo.png" class="interactable" palabra-interactiva="idConcepto: concept_electrodo" movimiento-vivo position="2.46 1.1 2.04" rotation="0 -129.6 0" width="1.8" height="0.6" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="2.46 1.1 2.04" rotation="0 -129.6 0">
+      <a-image src="./termino_electrodo.png" width="1.8" height="0.6" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_electrodo" width="2.2" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 11. Escoria (Ángulo 144.0°) -->
-    <a-image src="./termino_escoria.png" class="interactable" palabra-interactiva="idConcepto: concept_escoria" movimiento-vivo position="1.88 2.3 2.59" rotation="0 -144.0 0" width="1.4" height="0.35" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="1.88 2.3 2.59" rotation="0 -144.0 0">
+      <a-image src="./termino_escoria.png" width="1.4" height="0.35" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_escoria" width="1.8" height="0.75" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 12. Higroscópico (Ángulo 158.4°) -->
-    <a-image src="./termino_higroscopico.png" class="interactable" palabra-interactiva="idConcepto: concept_higroscopico" movimiento-vivo position="1.18 1.6 2.98" rotation="0 -158.4 0" width="1.6" height="0.4" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="1.18 1.6 2.98" rotation="0 -158.4 0">
+      <a-image src="./termino_higroscopico.png" width="1.6" height="0.4" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_higroscopico" width="2.0" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 13. Intensidad de Corriente (Ángulo 172.8°) -->
-    <a-image src="./termino_intensidad.png" class="interactable" palabra-interactiva="idConcepto: concept_intensidad" movimiento-vivo position="0.40 1.9 3.18" rotation="0 -172.8 0" width="2.4" height="0.6" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="0.40 1.9 3.18" rotation="0 -172.8 0">
+      <a-image src="./termino_intensidad-de-corriente.png" width="2.4" height="0.6" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_intensidad" width="2.8" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 14. Ionización (Ángulo 187.2°) -->
-    <a-image src="./termino_ionizacion.png" class="interactable" palabra-interactiva="idConcepto: concept_ionizacion" movimiento-vivo position="-0.40 1.3 3.18" rotation="0 -187.2 0" width="1.6" height="0.4" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-0.40 1.3 3.18" rotation="0 -187.2 0">
+      <a-image src="./termino_ionizacion.png" width="1.6" height="0.4" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_ionizacion" width="2.0" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 15. Masa (Ángulo 201.6°) -->
-    <a-image src="./termino_masa.png" class="interactable" palabra-interactiva="idConcepto: concept_masa" movimiento-vivo position="-1.18 2.1 2.98" rotation="0 -201.6 0" width="1.2" height="0.3" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-1.18 2.1 2.98" rotation="0 -201.6 0">
+      <a-image src="./termino_masa.png" width="1.2" height="0.3" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_masa" width="1.6" height="0.7" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 16. Penetración (Ángulo 216.0°) -->
-    <a-image src="./termino_penetracion.png" class="interactable" palabra-interactiva="idConcepto: concept_penetracion" movimiento-vivo position="-1.88 1.5 2.59" rotation="0 -216.0 0" width="1.6" height="0.4" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-1.88 1.5 2.59" rotation="0 -216.0 0">
+      <a-image src="./termino_penetracion.png" width="1.6" height="0.4" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_penetracion" width="2.0" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 17. Piqueta (Ángulo 230.4°) -->
-    <a-image src="./termino_piqueta.png" class="interactable" palabra-interactiva="idConcepto: concept_piqueta" movimiento-vivo position="-2.46 2.0 2.04" rotation="0 -230.4 0" width="1.4" height="0.35" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-2.46 2.0 2.04" rotation="0 -230.4 0">
+      <a-image src="./termino_piqueta.png" width="1.4" height="0.35" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_piqueta" width="1.8" height="0.75" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 18. Plasma (Ángulo 244.8°) -->
-    <a-image src="./termino_plasma.png" class="interactable" palabra-interactiva="idConcepto: concept_plasma" movimiento-vivo position="-2.90 1.2 1.36" rotation="0 -244.8 0" width="1.4" height="0.35" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-2.90 1.2 1.36" rotation="0 -244.8 0">
+      <a-image src="./termino_plasma.png" width="1.4" height="0.35" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_plasma" width="1.8" height="0.75" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 19. Polaridad (Ángulo 259.2°) -->
-    <a-image src="./termino_polaridad.png" class="interactable" palabra-interactiva="idConcepto: concept_polaridad" movimiento-vivo position="-3.14 2.2 0.60" rotation="0 -259.2 0" width="1.5" height="0.375" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-3.14 2.2 0.60" rotation="0 -259.2 0">
+      <a-image src="./termino_polaridad.png" width="1.5" height="0.375" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_polaridad" width="1.9" height="0.775" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 20. Polaridad Directa DC- (Ángulo 273.6°) -->
-    <a-image src="./termino_polaridad_directa.png" class="interactable" palabra-interactiva="idConcepto: concept_polaridad_directa" movimiento-vivo position="-3.19 1.4 -0.20" rotation="0 -273.6 0" width="2.5" height="0.5" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-3.19 1.4 -0.20" rotation="0 -273.6 0">
+      <a-image src="./termino_polaridad-directa-dcminus.png" width="2.5" height="0.5" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_polaridad_directa" width="2.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 21. Polaridad Inversa DC+ (Ángulo 288.0°) -->
-    <a-image src="./termino_polaridad_inversa.png" class="interactable" palabra-interactiva="idConcepto: concept_polaridad_inversa" movimiento-vivo position="-3.04 1.8 -0.99" rotation="0 -288.0 0" width="2.2" height="0.5" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-3.04 1.8 -0.99" rotation="0 -288.0 0">
+      <a-image src="./termino_polaridad-inversa-dcplus.png" width="2.2" height="0.5" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_polaridad_inversa" width="2.6" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 22. Revestimiento (Ángulo 302.4°) -->
-    <a-image src="./termino_revestimiento.png" class="interactable" palabra-interactiva="idConcepto: concept_revestimiento" movimiento-vivo position="-2.70 1.1 -1.71" rotation="0 -302.4 0" width="1.8" height="0.5" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-2.70 1.1 -1.71" rotation="0 -302.4 0">
+      <a-image src="./termino_revestimiento.png" width="1.8" height="0.5" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_revestimiento" width="2.2" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 23. Tensión (Ángulo 316.8°) -->
-    <a-image src="./termino_tension.png" class="interactable" palabra-interactiva="idConcepto: concept_tension" movimiento-vivo position="-2.19 2.3 -2.33" rotation="0 -316.8 0" width="1.4" height="0.5" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-2.19 2.3 -2.33" rotation="0 -316.8 0">
+      <a-image src="./termino_tension.png" width="1.4" height="0.5" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_tension" width="1.8" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 24. WPS (Ángulo 331.2°) -->
-    <a-image src="./termino_wps.png" class="interactable" palabra-interactiva="idConcepto: concept_wps" movimiento-vivo position="-1.54 1.6 -2.80" rotation="0 -331.2 0" width="1.2" height="0.5" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-1.54 1.6 -2.80" rotation="0 -331.2 0">
+      <a-image src="./termino_wps.png" width="1.2" height="0.5" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_wps" width="1.6" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
     <!-- 25. ZAT (Ángulo 345.6°) -->
-    <a-image src="./termino_zat.png" class="interactable" palabra-interactiva="idConcepto: concept_zat" movimiento-vivo position="-0.80 1.9 -3.10" rotation="0 -345.6 0" width="1.2" height="0.5" transparent="true"></a-image>
+    <a-entity movimiento-vivo position="-0.80 1.9 -3.10" rotation="0 -345.6 0">
+      <a-image src="./termino_zat.png" width="1.2" height="0.5" transparent="true"></a-image>
+      <a-plane class="interactable" palabra-interactiva="idConcepto: concept_zat" width="1.6" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
+    </a-entity>
 
   </a-entity>
 
