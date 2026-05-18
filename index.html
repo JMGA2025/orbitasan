@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Órbita SAN - Soldadura VR</title>
+  
+  <!-- Librería de A-Frame VR -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <!-- Google Fonts para la pantalla de bienvenida 2D -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+  
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; font-family: 'Montserrat', sans-serif; }
+    #pantalla-inicio { position: fixed; inset: 0; z-index: 999; background: radial-gradient(circle at center, #050510 0%, #000000 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; padding: 20px; transition: opacity 1s ease-in-out; }
+    #pantalla-inicio::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 50px 50px; opacity: 0.3; pointer-events: none; }
+    
+    #pantalla-inicio h2 { font-size: 1.2rem; color: #a0a0ff; margin-bottom: 0; font-weight: 300; letter-spacing: 5px; text-transform: uppercase; }
+    #pantalla-inicio h1 { font-family: 'Cinzel', serif; font-size: 4rem; color: #e0d070; margin-top: 0; margin-bottom: 0.5rem; letter-spacing: 6px; text-shadow: 0 0 20px rgba(224, 208, 112, 0.3); }
+    #pantalla-inicio p { color: #bbb; font-size: 1.1rem; margin-bottom: 3rem; line-height: 1.6; max-width: 600px; }
+    
+    #btn-entrar { padding: 16px 56px; background: rgba(224, 208, 112, 0.05); border: 1px solid #e0d070; border-radius: 50px; color: #e0d070; font-size: 1.2rem; cursor: pointer; letter-spacing: 3px; transition: all 0.4s ease; box-shadow: 0 0 15px rgba(224, 208, 112, 0.1); }
+    #btn-entrar:hover { background: #e0d070; color: #000; box-shadow: 0 0 30px rgba(224, 208, 112, 0.6); transform: scale(1.05); }
+  </style>
+
+  <script>
+    // Asociación de conceptos con sus respectivas tarjetas explicativas PNG locales
+    const ASOCIACIONES_SAN = {
+      'concept_ac': { cardSrc: './ac-card.png' },
+      'concept_arco': { cardSrc: './arco-electrico-card.png' },
+      'concept_bano': { cardSrc: './bano-de-fusion-card.png' },
+      'concept_cordon': { cardSrc: './cordon-card.png' },
+      'concept_dc': { cardSrc: './dc-card.png' },
+      'concept_e6013': { cardSrc: './e6013-card.png' },
+      'concept_e7016': { cardSrc: './e7016-card.png' },
+      'concept_e7018': { cardSrc: './e7018-card.png' },
+      'concept_e7024': { cardSrc: './e7024-card.png' },
+      'concept_electrodo': { cardSrc: './electrodo-card.png' },
+      'concept_escoria': { cardSrc: './escoria-card.png' },
+      'concept_higroscopico': { cardSrc: './higroscopico-card.png' },
+      'concept_intensidad': { cardSrc: './intensidad-de-corriente-card.png' },
+      'concept_ionizacion': { cardSrc: './ionizacion-card.png' },
+      'concept_masa': { cardSrc: './masa-card.png' },
+      'concept_penetracion': { cardSrc: './penetracion-card.png' },
+      'concept_piqueta': { cardSrc: './piqueta-card.png' },
+      'concept_plasma': { cardSrc: './plasma-card.png' },
+      'concept_polaridad': { cardSrc: './polaridad-card.png' },
+      'concept_polaridad_directa': { cardSrc: './polaridad-directa-dcminus-card.png' },
+      
+      // Nuevos conceptos añadidos de tu glosario interactivo
+      'concept_polaridad_inversa': { cardSrc: './polaridad-inversa-dcplus-card.png' },
+      'concept_revestimiento': { cardSrc: './revestimiento-card.png' },
+      'concept_tension': { cardSrc: './tension-card.png' },
+      'concept_wps': { cardSrc: './wps-card.png' },
+      'concept_zat': { cardSrc: './zat-card.png' }
+    };
+
+    // Componente de oscilación y flotación sutil e independiente
+    AFRAME.registerComponent('movimiento-vivo', {
+      init: function () {
+        this.homePos = new THREE.Vector3().copy(this.el.object3D.position);
+        this.proximoDestino();
+      },
+      proximoDestino: function () {
+        const el = this.el;
+        if (!el) return;
+        
+        // Desplazamiento sutil e independiente en ejes X, Y y Z
+        const targetX = this.homePos.x + (Math.random() - 0.5) * 0.8;
+        const targetY = this.homePos.y + (Math.random() - 0.5) * 0.6;
+        const targetZ = this.homePos.z + (Math.random() - 0.5) * 0.6;
+        const duracion = 5000 + Math.random() * 4000;
+
+        el.setAttribute('animation__pos', {
+          property: 'position',
+          to: `${targetX} ${targetY} ${targetZ}`,
+          dur: duracion,
+          easing: 'easeInOutSine'
+        });
+        
+        setTimeout(() => { if (this.el) this.proximoDestino(); }, duracion);
+      }
+    });
+
+    // Componente interactivo para punteros láser de Quest 3 y mouse en PC
+    AFRAME.registerComponent('palabra-interactiva', {
+      schema: { idConcepto: {type: 'string'} },
+      init: function () {
+        var el = this.el;
+        var data = this.data;
+
+        // Efecto Hover: Al pasar el puntero, el término brilla en dorado y se agranda ligeramente
+        el.addEventListener('mouseenter', function () {
+          el.setAttribute('color', '#e0d070'); // Aplica un elegante tinte dorado sobre el término transparente
+          el.setAttribute('scale', '1.25 1.25 1.25');
+        });
+
+        // Efecto Leave: Regresa a su tamaño y color original (blanco limpio)
+        el.addEventListener('mouseleave', function () {
+          el.setAttribute('color', '#ffffff');
+          el.setAttribute('scale', '1 1 1');
+        });
+
+        // Evento de selección (Click / Gatillo del mando VR)
+        el.addEventListener('click', function () {
+          var asociacion = ASOCIACIONES_SAN[data.idConcepto];
+          if (!asociacion) return;
+
+          var panel = document.querySelector('#panel-info-dinamico');
+          var cardImagen = document.querySelector('#card-contenido-img');
+          
+          // Cambia la textura de la tarjeta por el PNG local correspondiente
+          cardImagen.setAttribute('src', asociacion.cardSrc);
+          
+          // Abre el panel animado en el frente de la cámara
+          panel.setAttribute('visible', 'true');
+          panel.setAttribute('animation__abrir', 'property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 450; easing: easeOutBack');
+        });
+      }
+    });
+  </script>
+</head>
+<body>
+
+<!-- Pantalla de Bienvenida (Capa 2D) -->
+<div id="pantalla-inicio">
+  <h2>MÓDULO SAN</h2>
+  <h1>ÓRBITA SAN</h1>
+  <p>Glosario de Soldadura en Atmósfera Natural interactivo.<br>
+  <small style="font-size: 0.85rem; color:#888; margin-top:10px; display:inline-block;">Apunta a las palabras flotantes y pulsa el gatillo de tus mandos de Meta Quest 3.</small></p>
+  <button id="btn-entrar" onclick="iniciar()">ENTRAR</button>
+</div>
+
+<!-- Escena VR de A-Frame -->
+<a-scene background="color:#000005" 
+         fog="type: exponential; color: #000008; density: 0.06" 
+         renderer="antialias: true; colorManagement: true;"
+         cursor="rayOrigin: mouse"
+         raycaster="objects: .interactable; interval: 100">
+  
+  <a-assets timeout="15000">
+    <!-- Precarga de fichas de explicación (cards) -->
+    <img id="card_ac" src="./ac-card.png">
+    <img id="card_arco" src="./arco-electrico-card.png">
+    <img id="card_bano" src="./bano-de-fusion-card.png">
+    <img id="card_cordon" src="./cordon-card.png">
+    <img id="card_dc" src="./dc-card.png">
+    <img id="card_e6013" src="./e6013-card.png">
+    <img id="card_e7016" src="./e7016-card.png">
+    <img id="card_e7018" src="./e7018-card.png">
+    <img id="card_e7024" src="./e7024-card.png">
+    <img id="card_electrodo" src="./electrodo-card.png">
+    <img id="card_escoria" src="./escoria-card.png">
+    <img id="card_higroscopico" src="./higroscopico-card.png">
+    <img id="card_intensidad" src="./intensidad-de-corriente-card.png">
+    <img id="card_ionizacion" src="./ionizacion-card.png">
+    <img id="card_masa" src="./masa-card.png">
+    <img id="card_penetracion" src="./penetracion-card.png">
+    <img id="card_piqueta" src="./piqueta-card.png">
+    <img id="card_plasma" src="./plasma-card.png">
+    <img id="card_polaridad" src="./polaridad-card.png">
+    <img id="card_polaridad_directa" src="./polaridad-directa-dcminus-card.png">
+    
+    <!-- Nuevos precargas de tarjetas explicativas -->
+    <img id="card_polaridad_inversa" src="./polaridad-inversa-dcplus-card.png">
+    <img id="card_revestimiento" src="./revestimiento-card.png">
+    <img id="card_tension" src="./tension-card.png">
+    <img id="card_wps" src="./wps-card.png">
+    <img id="card_zat" src="./zat-card.png">
+
+    <!-- Música de fondo local -->
+    <audio id="musica-fondo" src="./ATECA1.mp3" loop preload="auto"></audio>
+    
+    <!-- Textura de carga de seguridad -->
+    <img id="fallback" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">
+  </a-assets>
+
+  <!-- Luces estéticas de ambiente y apoyo -->
+  <a-light type="ambient" color="#111122"></a-light>
+  <a-light type="point" position="0 5 0" color="#5555aa" intensity="0.6"></a-light>
+  
+  <!-- Espacio estelar dinámico -->
+  <a-entity id="estrellas"></a-entity>
+
+  <!-- NUBE DE TÉRMINOS FLOTANTES (PNGs recortados distribuidos de forma circular y constante en 360°) -->
+  <a-entity id="nube-palabras" position="0 0 0" visible="false" animation="property: rotation; to: 0 360 0; loop: true; dur: 70000; easing: linear">
+    
+    <!-- 1. AC (Ángulo 0.0°) -->
+    <a-image src="./ac.png" class="interactable" palabra-interactiva="idConcepto: concept_ac" movimiento-vivo position="0 1.7 -3.2" width="1.2" height="0.4" transparent="true"></a-image>
+    
+    <!-- 2. Arco Eléctrico (Ángulo 14.4°) -->
+    <a-image src="./arco-electrico.png" class="interactable" palabra-interactiva="idConcepto: concept_arco" movimiento-vivo position="0.80 1.3 -3.10" rotation="0 -14.4 0" width="1.8" height="0.6" transparent="true"></a-image>
+    
+    <!-- 3. Baño de Fusión (Ángulo 28.8°) -->
+    <a-image src="./bano-de-fusion.png" class="interactable" palabra-interactiva="idConcepto: concept_bano" movimiento-vivo position="1.54 2.0 -2.80" rotation="0 -28.8 0" width="1.8" height="0.6" transparent="true"></a-image>
+
+    <!-- 4. Cordón (Ángulo 43.2°) -->
+    <a-image src="./cordon.png" class="interactable" palabra-interactiva="idConcepto: concept_cordon" movimiento-vivo position="2.19 1.5 -2.33" rotation="0 -43.2 0" width="1.5" height="0.5" transparent="true"></a-image>
+    
+    <!-- 5. DC (Ángulo 57.6°) -->
+    <a-image src="./dc.png" class="interactable" palabra-interactiva="idConcepto: concept_dc" movimiento-vivo position="2.70 1.8 -1.71" rotation="0 -57.6 0" width="1.2" height="0.4" transparent="true"></a-image>
+
+    <!-- 6. E6013 (Ángulo 72.0°) -->
+    <a-image src="./e6013.png" class="interactable" palabra-interactiva="idConcepto: concept_e6013" movimiento-vivo position="3.04 1.2 -0.99" rotation="0 -72.0 0" width="1.5" height="0.5" transparent="true"></a-image>
+
+    <!-- 7. E7016 (Ángulo 86.4°) -->
+    <a-image src="./e7016.png" class="interactable" palabra-interactiva="idConcepto: concept_e7016" movimiento-vivo position="3.19 2.2 -0.20" rotation="0 -86.4 0" width="1.5" height="0.5" transparent="true"></a-image>
+    
+    <!-- 8. E7018 (Ángulo 100.8°) -->
+    <a-image src="./e7018.png" class="interactable" palabra-interactiva="idConcepto: concept_e7018" movimiento-vivo position="3.14 1.4 0.60" rotation="0 -100.8 0" width="1.5" height="0.5" transparent="true"></a-image>
+
+    <!-- 9. E7024 (Ángulo 115.2°) -->
+    <a-image src="./e7024.png" class="interactable" palabra-interactiva="idConcepto: concept_e7024" movimiento-vivo position="2.90 1.9 1.36" rotation="0 -115.2 0" width="1.5" height="0.5" transparent="true"></a-image>
+
+    <!-- 10. Electrodo (Ángulo 129.6°) -->
+    <a-image src="./electrodo.png" class="interactable" palabra-interactiva="idConcepto: concept_electrodo" movimiento-vivo position="2.46 1.1 2.04" rotation="0 -129.6 0" width="1.8" height="0.6" transparent="true"></a-image>
+
+    <!-- 11. Escoria (Ángulo 144.0°) -->
+    <a-image src="./escoria.png" class="interactable" palabra-interactiva="idConcepto: concept_escoria" movimiento-vivo position="1.88 2.3 2.59" rotation="0 -144.0 0" width="1.4" height="0.35" transparent="true"></a-image>
+
+    <!-- 12. Higroscópico (Ángulo 158.4°) -->
+    <a-image src="./higroscopico.png" class="interactable" palabra-interactiva="idConcepto: concept_higroscopico" movimiento-vivo position="1.18 1.6 2.98" rotation="0 -158.4 0" width="1.6" height="0.4" transparent="true"></a-image>
+
+    <!-- 13. Intensidad de Corriente (Ángulo 172.8°) -->
+    <a-image src="./intensidad-de-corriente.png" class="interactable" palabra-interactiva="idConcepto: concept_intensidad" movimiento-vivo position="0.40 1.9 3.18" rotation="0 -172.8 0" width="2.4" height="0.6" transparent="true"></a-image>
+
+    <!-- 14. Ionización (Ángulo 187.2°) -->
+    <a-image src="./ionizacion.png" class="interactable" palabra-interactiva="idConcepto: concept_ionizacion" movimiento-vivo position="-0.40 1.3 3.18" rotation="0 -187.2 0" width="1.6" height="0.4" transparent="true"></a-image>
+
+    <!-- 15. Masa (Ángulo 201.6°) -->
+    <a-image src="./masa.png" class="interactable" palabra-interactiva="idConcepto: concept_masa" movimiento-vivo position="-1.18 2.1 2.98" rotation="0 -201.6 0" width="1.2" height="0.3" transparent="true"></a-image>
+
+    <!-- 16. Penetración (Ángulo 216.0°) -->
+    <a-image src="./penetracion.png" class="interactable" palabra-interactiva="idConcepto: concept_penetracion" movimiento-vivo position="-1.88 1.5 2.59" rotation="0 -216.0 0" width="1.6" height="0.4" transparent="true"></a-image>
+
+    <!-- 17. Piqueta (Ángulo 230.4°) -->
+    <a-image src="./piqueta.png" class="interactable" palabra-interactiva="idConcepto: concept_piqueta" movimiento-vivo position="-2.46 2.0 2.04" rotation="0 -230.4 0" width="1.4" height="0.35" transparent="true"></a-image>
+
+    <!-- 18. Plasma (Ángulo 244.8°) -->
+    <a-image src="./plasma.png" class="interactable" palabra-interactiva="idConcepto: concept_plasma" movimiento-vivo position="-2.90 1.2 1.36" rotation="0 -244.8 0" width="1.4" height="0.35" transparent="true"></a-image>
+
+    <!-- 19. Polaridad (Ángulo 259.2°) -->
+    <a-image src="./polaridad.png" class="interactable" palabra-interactiva="idConcepto: concept_polaridad" movimiento-vivo position="-3.14 2.2 0.60" rotation="0 -259.2 0" width="1.5" height="0.375" transparent="true"></a-image>
+
+    <!-- 20. Polaridad Directa DC- (Ángulo 273.6°) -->
+    <a-image src="./polaridad-directa-dcminus.png" class="interactable" palabra-interactiva="idConcepto: concept_polaridad_directa" movimiento-vivo position="-3.19 1.4 -0.20" rotation="0 -273.6 0" width="2.5" height="0.5" transparent="true"></a-image>
+
+    <!-- 21. Polaridad Inversa DC+ (Ángulo 288.0°) - NUEVO -->
+    <a-image src="./polaridad-inversa-dcplus.png" class="interactable" palabra-interactiva="idConcepto: concept_polaridad_inversa" movimiento-vivo position="-3.04 1.8 -0.99" rotation="0 -288.0 0" width="2.2" height="0.5" transparent="true"></a-image>
+
+    <!-- 22. Revestimiento (Ángulo 302.4°) - NUEVO -->
+    <a-image src="./revestimiento.png" class="interactable" palabra-interactiva="idConcepto: concept_revestimiento" movimiento-vivo position="-2.70 1.1 -1.71" rotation="0 -302.4 0" width="1.8" height="0.5" transparent="true"></a-image>
+
+    <!-- 23. Tensión (Ángulo 316.8°) - NUEVO -->
+    <a-image src="./tension.png" class="interactable" palabra-interactiva="idConcepto: concept_tension" movimiento-vivo position="-2.19 2.3 -2.33" rotation="0 -316.8 0" width="1.4" height="0.5" transparent="true"></a-image>
+
+    <!-- 24. WPS (Ángulo 331.2°) - NUEVO -->
+    <a-image src="./wps.png" class="interactable" palabra-interactiva="idConcepto: concept_wps" movimiento-vivo position="-1.54 1.6 -2.80" rotation="0 -331.2 0" width="1.2" height="0.5" transparent="true"></a-image>
+
+    <!-- 25. ZAT (Ángulo 345.6°) - NUEVO -->
+    <a-image src="./zat.png" class="interactable" palabra-interactiva="idConcepto: concept_zat" movimiento-vivo position="-0.80 1.9 -3.10" rotation="0 -345.6 0" width="1.2" height="0.5" transparent="true"></a-image>
+
+  </a-entity>
+
+  <!-- PANEL DE EXPLICACIÓN DETALLADA (Frente al Usuario) -->
+  <a-entity id="panel-info-dinamico" position="0 1.6 -1.8" scale="0.01 0.01 0.01" visible="false">
+    <!-- Marco de profundidad estético -->
+    <a-plane width="2.40" height="1.44" color="#000000" opacity="0.8" material="shader: flat">
+      <a-plane width="2.44" height="1.48" color="#e0d070" position="0 0 -0.01" opacity="0.3" material="shader: flat"></a-plane>
+      
+      <!-- Ficha explicativa PNG dinámica -->
+      <a-image id="card-contenido-img" src="#fallback" width="2.38" height="1.42" position="0 0 0.01" material="shader: flat; transparent: true;"></a-image>
+      
+      <!-- Botón de Cierre interactivo -->
+      <a-plane class="interactable" width="0.6" height="0.18" color="#992222" position="0 -0.85 0.02"
+               animation__hover="property: scale; to: 1.1 1.1 1.1; dur: 150; startEvents: mouseenter"
+               animation__leave="property: scale; to: 1 1 1; dur: 150; startEvents: mouseleave"
+               onclick="document.querySelector('#panel-info-dinamico').setAttribute('visible', 'false')">
+        <a-text value="CERRAR" font="exo2bold" align="center" color="#ffffff" width="2.2" position="0 0 0.01"></a-text>
+      </a-plane>
+    </a-plane>
+  </a-entity>
+
+  <!-- RIG DE CÁMARA Y MANDOS QUEST 3 (Configuración completa de controles) -->
+  <a-entity id="rig">
+    <a-camera position="0 1.6 0" wasd-controls look-controls="pointerLockEnabled: false"></a-camera>
+    <a-entity laser-controls="hand:left" raycaster="objects: .interactable; far:10; showLine: true" line="color: #4444aa; opacity: 0.5"></a-entity>
+    <a-entity laser-controls="hand:right" raycaster="objects: .interactable; far:10; showLine: true" line="color: #e0d070; opacity: 0.5"></a-entity>
+  </a-entity>
+
+</a-scene>
+
+<script>
+  // Inicialización de música de fondo y desvanecimiento de la pantalla de carga
+  function iniciar() {
+    document.getElementById('pantalla-inicio').style.opacity = '0';
+    const audio = document.getElementById('musica-fondo');
+    if (audio) {
+      audio.volume = 0.45;
+      audio.play().catch(e => console.log("Interacción requerida por el navegador para reproducir audio."));
+    }
+    setTimeout(() => { 
+      document.getElementById('pantalla-inicio').style.display = 'none';
+      document.getElementById('nube-palabras').setAttribute('visible', 'true');
+    }, 1000);
+  }
+
+  // Generador estético de campo de estrellas 3D
+  function crearEstrellas() {
+    const contenedor = document.getElementById('estrellas');
+    for (let i = 0; i < 250; i++) {
+      const e = document.createElement('a-sphere');
+      const r = 25 + Math.random() * 10;
+      const t = Math.random() * Math.PI * 2;
+      const p = Math.random() * Math.PI;
+      e.setAttribute('position', `${r * Math.sin(p) * Math.cos(t)} ${r * Math.cos(p)} ${r * Math.sin(p) * Math.sin(t)}`);
+      e.setAttribute('radius', 0.02 + Math.random() * 0.04);
+      e.setAttribute('material', 'color: #ffffff; shader: flat');
+      contenedor.appendChild(e);
+    }
+  }
+
+  // Acceso inmediato si el visor Meta Quest 3 inicia directo en modo VR
+  document.querySelector('a-scene').addEventListener('enter-vr', () => {
+    document.getElementById('pantalla-inicio').style.display = 'none';
+    const audio = document.getElementById('musica-fondo');
+    if (audio) audio.play().catch(e => {});
+    document.getElementById('nube-palabras').setAttribute('visible', 'true');
+  });
+
+  window.addEventListener('load', () => { 
+    crearEstrellas();
+  });
+</script>
+</body>
+</html>
