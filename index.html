@@ -24,116 +24,33 @@
   </style>
 
   <script>
-    // Componente de Autorespaldo Inteligente (Evita bloqueos y 404 en el visor Quest)
-    AFRAME.registerComponent('imagen-autorespaldo', {
-      schema: {
-        src: {type: 'string'},      // Ruta de la imagen real
-        texto: {type: 'string'},    // Texto si falla
-        esTarjeta: {type: 'boolean', default: false} // Formato ficha o formato término
-      },
-      init: function () {
-        this.aplicarTextura = this.aplicarTextura.bind(this);
-        this.cargarImagen();
-      },
-      update: function () {
-        this.cargarImagen();
-      },
-      cargarImagen: function () {
-        const el = this.el;
-        const data = this.data;
-        if (!data.src) return;
-
-        const img = new Image();
-        img.onload = () => {
-          this.aplicarTextura(img);
-        };
-        img.onerror = () => {
-          // Si no encuentra el PNG, genera un canvas holográfico dinámico al instante
-          const canvas = document.createElement('canvas');
-          canvas.width = data.esTarjeta ? 512 : 256;
-          canvas.height = data.esTarjeta ? 307 : 85;
-          const ctx = canvas.getContext('2d');
-          
-          if (data.esTarjeta) {
-            // Diseño de Ficha de Información de respaldo
-            ctx.fillStyle = '#060612';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#e0d070';
-            ctx.lineWidth = 6;
-            ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
-            
-            ctx.fillStyle = '#e0d070';
-            ctx.font = 'bold 30px Montserrat, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(data.texto.toUpperCase(), canvas.width / 2, 60);
-            
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '16px Montserrat, sans-serif';
-            ctx.fillText('Tarjeta Técnica Interactiva', canvas.width / 2, 130);
-            ctx.fillStyle = '#8888aa';
-            ctx.fillText('Soldadura en Atmósfera Natural', canvas.width / 2, 170);
-            ctx.fillText('(Cargando archivo real: ' + data.texto + '.png)', canvas.width / 2, 205);
-            
-            ctx.fillStyle = '#4df0ff';
-            ctx.font = 'italic 12px sans-serif';
-            ctx.fillText('ÓRBITA SAN - CONEXIÓN ACTIVA', canvas.width / 2, 260);
-          } else {
-            // Diseño de Término flotante de respaldo (Estilo Holograma)
-            ctx.fillStyle = 'rgba(12, 12, 24, 0.9)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#e0d070';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
-            
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 20px Montserrat, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(data.texto.toUpperCase(), canvas.width / 2, canvas.height / 2);
-          }
-          
-          this.aplicarTextura(canvas);
-        };
-        img.src = data.src;
-      },
-      aplicarTextura: function (source) {
-        this.el.setAttribute('material', {
-          shader: 'flat',
-          src: source,
-          transparent: true,
-          alphaTest: 0.5,
-          side: 'double'
-        });
-      }
-    });
-
-    // Mapeo preciso entre el ID de concepto, su ruta PNG y texto descriptivo
+    // Mapeo preciso entre el ID de concepto y la ID de la tarjeta explicativa precargada en <a-assets>
     const ASOCIACIONES_SAN = {
-      'concept_ac': { cardSrc: './ac.png', texto: 'ac' },
-      'concept_arco': { cardSrc: './arco-electrico.png', texto: 'arco-electrico' },
-      'concept_bano': { cardSrc: './bano-de-fusion.png', texto: 'bano-de-fusion' },
-      'concept_cordon': { cardSrc: './cordon.png', texto: 'cordon' },
-      'concept_dc': { cardSrc: './dc.png', texto: 'dc' },
-      'concept_e6013': { cardSrc: './e6013.png', texto: 'e6013' },
-      'concept_e7016': { cardSrc: './e7016.png', texto: 'e7016' },
-      'concept_e7018': { cardSrc: './e7018.png', texto: 'e7018' },
-      'concept_e7024': { cardSrc: './e7024.png', texto: 'e7024' },
-      'concept_electrodo': { cardSrc: './electrodo.png', texto: 'electrodo' },
-      'concept_escoria': { cardSrc: './escoria.png', texto: 'escoria' },
-      'concept_higroscopico': { cardSrc: './higroscopico.png', texto: 'higroscopico' },
-      'concept_intensidad': { cardSrc: './intensidad-de-corriente.png', texto: 'intensidad-de-corriente' },
-      'concept_ionizacion': { cardSrc: './ionizacion.png', texto: 'ionizacion' },
-      'concept_masa': { cardSrc: './masa.png', texto: 'masa' },
-      'concept_penetracion': { cardSrc: './penetracion.png', texto: 'penetracion' },
-      'concept_piqueta': { cardSrc: './piqueta.png', texto: 'piqueta' },
-      'concept_plasma': { cardSrc: './plasma.png', texto: 'plasma' },
-      'concept_polaridad': { cardSrc: './polaridad.png', texto: 'polaridad' },
-      'concept_polaridad_directa': { cardSrc: './polaridad-directa-dcminus.png', texto: 'polaridad-directa-dcminus' },
-      'concept_polaridad_inversa': { cardSrc: './polaridad-inversa-dcplus.png', texto: 'polaridad-inversa-dcplus' },
-      'concept_revestimiento': { cardSrc: './revestimiento.png', texto: 'revestimiento' },
-      'concept_tension': { cardSrc: './tension.png', texto: 'tension' },
-      'concept_wps': { cardSrc: './wps.png', texto: 'wps' },
-      'concept_zat': { cardSrc: './zat.png', texto: 'zat' }
+      'concept_ac': { cardId: '#card_ac' },
+      'concept_arco': { cardId: '#card_arco' },
+      'concept_bano': { cardId: '#card_bano' },
+      'concept_cordon': { cardId: '#card_cordon' },
+      'concept_dc': { cardId: '#card_dc' },
+      'concept_e6013': { cardId: '#card_e6013' },
+      'concept_e7016': { cardId: '#card_e7016' },
+      'concept_e7018': { cardId: '#card_e7018' },
+      'concept_e7024': { cardId: '#card_e7024' },
+      'concept_electrodo': { cardId: '#card_electrodo' },
+      'concept_escoria': { cardId: '#card_escoria' },
+      'concept_higroscopico': { cardId: '#card_higroscopico' },
+      'concept_intensidad': { cardId: '#card_intensidad' },
+      'concept_ionizacion': { cardId: '#card_ionizacion' },
+      'concept_masa': { cardId: '#card_masa' },
+      'concept_penetracion': { cardId: '#card_penetracion' },
+      'concept_piqueta': { cardId: '#card_piqueta' },
+      'concept_plasma': { cardId: '#card_plasma' },
+      'concept_polaridad': { cardId: '#card_polaridad' },
+      'concept_polaridad_directa': { cardId: '#card_polaridad_directa' },
+      'concept_polaridad_inversa': { cardId: '#card_polaridad_inversa' },
+      'concept_revestimiento': { cardId: '#card_revestimiento' },
+      'concept_tension': { cardId: '#card_tension' },
+      'concept_wps': { cardId: '#card_wps' },
+      'concept_zat': { cardId: '#card_zat' }
     };
 
     // Componente de oscilación y flotación sutil e independiente
@@ -146,6 +63,7 @@
         const el = this.el;
         if (!el) return;
         
+        // Desplazamiento sutil e independiente en ejes X, Y y Z
         const targetX = this.homePos.x + (Math.random() - 0.5) * 0.8;
         const targetY = this.homePos.y + (Math.random() - 0.5) * 0.6;
         const targetZ = this.homePos.z + (Math.random() - 0.5) * 0.6;
@@ -162,46 +80,44 @@
       }
     });
 
-    // Componente para rotar la cámara (Snap Turn) usando el Joystick del mando derecho
-    AFRAME.registerComponent('joystick-turn', {
+    // Componente inteligente de carga de imágenes con fallback textual para vista previa
+    AFRAME.registerComponent('imagen-con-fallback', {
       schema: {
-        rig: {type: 'selector', default: '#rig'},
-        angle: {type: 'number', default: 45},
-        cooldown: {type: 'number', default: 400}
+        texto: {type: 'string'},
+        src: {type: 'string'},
+        w: {type: 'number', default: 1.2},
+        h: {type: 'number', default: 0.4}
       },
       init: function () {
-        this.canTurn = true;
-        this.handleThumbstick = this.handleThumbstick.bind(this);
-        this.handleAxisMove = this.handleAxisMove.bind(this);
+        var el = this.el;
+        var data = this.data;
         
-        this.el.addEventListener('thumbstickmoved', this.handleThumbstick);
-        this.el.addEventListener('axismove', this.handleAxisMove);
-      },
-      handleThumbstick: function (evt) {
-        this.processTurn(evt.detail.x);
-      },
-      handleAxisMove: function (evt) {
-        if (evt.detail.axis) {
-          const xVal = evt.detail.axis || 0;
-          this.processTurn(xVal);
-        }
-      },
-      processTurn: function (xVal) {
-        if (!this.canTurn) return;
+        // Creamos la imagen nativa optimizada
+        var img = document.createElement('a-image');
+        img.setAttribute('src', data.src);
+        img.setAttribute('width', data.w);
+        img.setAttribute('height', data.h);
+        img.setAttribute('transparent', 'true');
+        el.appendChild(img);
 
-        if (Math.abs(xVal) > 0.65) {
-          const rig = this.data.rig;
-          const currentRotation = rig.getAttribute('rotation') || {x: 0, y: 0, z: 0};
-          const rotationOffset = xVal > 0 ? -this.data.angle : this.data.angle;
+        // Test de carga de la imagen (falla en preview si no está subida)
+        var testImg = new Image();
+        var assetEl = document.querySelector(data.src);
+        testImg.src = assetEl ? assetEl.getAttribute('src') : '';
+
+        testImg.onerror = function () {
+          // Ocultar imagen vacía
+          img.setAttribute('visible', 'false');
           
-          currentRotation.y += rotationOffset;
-          rig.setAttribute('rotation', currentRotation);
-
-          this.canTurn = false;
-          setTimeout(() => {
-            this.canTurn = true;
-          }, this.data.cooldown);
-        }
+          // Generar texto 3D de respaldo para que la vista previa sea usable
+          var txt = document.createElement('a-text');
+          txt.setAttribute('value', data.texto);
+          txt.setAttribute('align', 'center');
+          txt.setAttribute('color', '#ffffff');
+          txt.setAttribute('font', 'exo2bold');
+          txt.setAttribute('width', '4');
+          el.appendChild(txt);
+        };
       }
     });
 
@@ -214,19 +130,29 @@
 
         el.addEventListener('mouseenter', function () {
           var parent = el.parentNode;
-          var img = parent.querySelector('[imagen-autorespaldo]');
+          var img = parent.querySelector('a-image');
           if (img) {
-            img.setAttribute('color', '#e0d070');
+            img.setAttribute('color', '#e0d070'); // Tinte dorado sobre el PNG flotante
             img.setAttribute('scale', '1.25 1.25 1.25');
+          }
+          var txt = parent.querySelector('a-text');
+          if (txt) {
+            txt.setAttribute('color', '#e0d070');
+            txt.setAttribute('scale', '1.25 1.25 1.25');
           }
         });
 
         el.addEventListener('mouseleave', function () {
           var parent = el.parentNode;
-          var img = parent.querySelector('[imagen-autorespaldo]');
+          var img = parent.querySelector('a-image');
           if (img) {
             img.setAttribute('color', '#ffffff');
             img.setAttribute('scale', '1 1 1');
+          }
+          var txt = parent.querySelector('a-text');
+          if (txt) {
+            txt.setAttribute('color', '#ffffff');
+            txt.setAttribute('scale', '1 1 1');
           }
         });
 
@@ -236,13 +162,28 @@
 
           var panel = document.querySelector('#panel-info-dinamico');
           var cardImagen = document.querySelector('#card-contenido-img');
+          var panelFallbackText = document.querySelector('#panel-fallback-text');
           
-          // Actualiza dinámicamente el componente asíncrono
-          cardImagen.setAttribute('imagen-autorespaldo', {
-            src: asociacion.cardSrc,
-            texto: asociacion.texto,
-            esTarjeta: true
-          });
+          // Asigna la textura correspondiente
+          cardImagen.setAttribute('src', asociacion.cardId);
+
+          var testImg = new Image();
+          var assetEl = document.querySelector(asociacion.cardId);
+          testImg.src = assetEl ? assetEl.getAttribute('src') : '';
+          
+          testImg.onload = function() {
+            cardImagen.setAttribute('visible', 'true');
+            if (panelFallbackText) panelFallbackText.setAttribute('visible', 'false');
+          };
+          
+          testImg.onerror = function() {
+            cardImagen.setAttribute('visible', 'false');
+            if (panelFallbackText) {
+              panelFallbackText.setAttribute('visible', 'true');
+              var nombreLegible = asociacion.cardId.replace('#card_', '').replace('_', ' ').replace('-', ' ').toUpperCase();
+              panelFallbackText.setAttribute('value', "ASOCIACION ACTIVA:\n\n" + nombreLegible + "\n\n[La tarjeta se cargara de forma grafica al subirla a tu GitHub]");
+            }
+          };
           
           panel.setAttribute('visible', 'true');
           panel.setAttribute('animation__abrir', 'property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 450; easing: easeOutBack');
@@ -306,6 +247,7 @@
 </div>
 
 <!-- Escena VR de A-Frame -->
+<!-- Se reduce el timeout a 500ms para evitar que la escena se bloquee en la vista previa del editor local -->
 <a-scene background="color:#000005" 
          fog="type: exponential; color: #000008; density: 0.06" 
          renderer="antialias: true; colorManagement: true;"
@@ -313,9 +255,66 @@
          cursor="rayOrigin: mouse"
          raycaster="objects: .interactable; interval: 100">
   
-  <a-assets timeout="1000">
-    <!-- El único archivo de precarga que no bloquea la escena principal -->
+  <a-assets timeout="500">
+    <!-- Precarga de todas las tarjetas explicativas diseñadas -->
+    <img id="card_ac" src="./ac.png">
+    <img id="card_arco" src="./arco-electrico.png">
+    <img id="card_bano" src="./bano-de-fusion.png">
+    <img id="card_cordon" src="./cordon.png">
+    <img id="card_dc" src="./dc.png">
+    <img id="card_e6013" src="./e6013.png">
+    <img id="card_e7016" src="./e7016.png">
+    <img id="card_e7018" src="./e7018.png">
+    <img id="card_e7024" src="./e7024.png">
+    <img id="card_electrodo" src="./electrodo.png">
+    <img id="card_escoria" src="./escoria.png">
+    <img id="card_higroscopico" src="./higroscopico.png">
+    <img id="card_intensidad" src="./intensidad-de-corriente.png">
+    <img id="card_ionizacion" src="./ionizacion.png">
+    <img id="card_masa" src="./masa.png">
+    <img id="card_penetracion" src="./penetracion.png">
+    <img id="card_piqueta" src="./piqueta.png">
+    <img id="card_plasma" src="./plasma.png">
+    <img id="card_polaridad" src="./polaridad.png">
+    <img id="card_polaridad_directa" src="./polaridad-directa-dcminus.png">
+    <img id="card_polaridad_inversa" src="./polaridad-inversa-dcplus.png">
+    <img id="card_revestimiento" src="./revestimiento.png">
+    <img id="card_tension" src="./tension.png">
+    <img id="card_wps" src="./wps.png">
+    <img id="card_zat" src="./zat.png">
+
+    <!-- Precarga de todos los términos flotantes (recortados con prefijo termino_) -->
+    <img id="term_ac" src="./termino_ac.png">
+    <img id="term_arco" src="./termino_arco-electrico.png">
+    <img id="term_bano" src="./termino_bano-de-fusion.png">
+    <img id="term_cordon" src="./termino_cordon.png">
+    <img id="term_dc" src="./termino_dc.png">
+    <img id="term_e6013" src="./termino_e6013.png">
+    <img id="term_e7016" src="./termino_e7016.png">
+    <img id="term_e7018" src="./termino_e7018.png">
+    <img id="term_e7024" src="./termino_e7024.png">
+    <img id="term_electrodo" src="./termino_electrodo.png">
+    <img id="term_escoria" src="./termino_escoria.png">
+    <img id="term_higroscopico" src="./termino_higroscopico.png">
+    <img id="term_intensidad" src="./termino_intensidad-de-corriente.png">
+    <img id="term_ionizacion" src="./termino_ionizacion.png">
+    <img id="term_masa" src="./termino_masa.png">
+    <img id="term_penetracion" src="./termino_penetracion.png">
+    <img id="term_piqueta" src="./termino_piqueta.png">
+    <img id="term_plasma" src="./termino_plasma.png">
+    <img id="term_polaridad" src="./termino_polaridad.png">
+    <img id="term_polaridad_directa" src="./termino_polaridad-directa-dcminus.png">
+    <img id="term_polaridad_inversa" src="./termino_polaridad-inversa-dcplus.png">
+    <img id="term_revestimiento" src="./termino_revestimiento.png">
+    <img id="term_tension" src="./termino_tension.png">
+    <img id="term_wps" src="./termino_wps.png">
+    <img id="term_zat" src="./termino_zat.png">
+
+    <!-- Música de fondo local -->
     <audio id="musica-fondo" src="./orbitaSAN.mp3" loop preload="auto"></audio>
+    
+    <!-- Textura de seguridad de carga provisional -->
+    <img id="fallback" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">
   </a-assets>
 
   <!-- Luces estéticas de ambiente y apoyo -->
@@ -348,151 +347,151 @@
     
     <!-- 1. AC (Ángulo 0.0°) -->
     <a-entity movimiento-vivo position="0 1.7 -3.2">
-      <a-entity geometry="primitive: plane; width: 1.2; height: 0.4" imagen-autorespaldo="src: ./termino_ac.png; texto: ac"></a-entity>
+      <a-entity imagen-con-fallback="texto: AC; src: #term_ac; w: 1.2; h: 0.4"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_ac" width="1.6" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
     
     <!-- 2. Arco Eléctrico (Ángulo 14.4°) -->
     <a-entity movimiento-vivo position="0.80 1.3 -3.10" rotation="0 -14.4 0">
-      <a-entity geometry="primitive: plane; width: 1.8; height: 0.6" imagen-autorespaldo="src: ./termino_arco-electrico.png; texto: arco-electrico"></a-entity>
+      <a-entity imagen-con-fallback="texto: Arco electrico; src: #term_arco; w: 1.8; h: 0.6"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_arco" width="2.2" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
     
     <!-- 3. Baño de Fusión (Ángulo 28.8°) -->
     <a-entity movimiento-vivo position="1.54 2.0 -2.80" rotation="0 -28.8 0">
-      <a-entity geometry="primitive: plane; width: 1.8; height: 0.6" imagen-autorespaldo="src: ./termino_bano-de-fusion.png; texto: bano-de-fusion"></a-entity>
+      <a-entity imagen-con-fallback="texto: Bano de fusion; src: #term_bano; w: 1.8; h: 0.6"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_bano" width="2.2" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 4. Cordón (Ángulo 43.2°) -->
     <a-entity movimiento-vivo position="2.19 1.5 -2.33" rotation="0 -43.2 0">
-      <a-entity geometry="primitive: plane; width: 1.5; height: 0.5" imagen-autorespaldo="src: ./termino_cordon.png; texto: cordon"></a-entity>
+      <a-entity imagen-con-fallback="texto: Cordon; src: #term_cordon; w: 1.5; h: 0.5"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_cordon" width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
     
     <!-- 5. DC (Ángulo 57.6°) -->
     <a-entity movimiento-vivo position="2.70 1.8 -1.71" rotation="0 -57.6 0">
-      <a-entity geometry="primitive: plane; width: 1.2; height: 0.4" imagen-autorespaldo="src: ./termino_dc.png; texto: dc"></a-entity>
+      <a-entity imagen-con-fallback="texto: DC; src: #term_dc; w: 1.2; h: 0.4"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_dc" width="1.6" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 6. E6013 (Ángulo 72.0°) -->
     <a-entity movimiento-vivo position="3.04 1.2 -0.99" rotation="0 -72.0 0">
-      <a-entity geometry="primitive: plane; width: 1.5; height: 0.5" imagen-autorespaldo="src: ./termino_e6013.png; texto: e6013"></a-entity>
+      <a-entity imagen-con-fallback="texto: E6013; src: #term_e6013; w: 1.5; h: 0.5"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_e6013" width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 7. E7016 (Ángulo 86.4°) -->
     <a-entity movimiento-vivo position="3.19 2.2 -0.20" rotation="0 -86.4 0">
-      <a-entity geometry="primitive: plane; width: 1.5; height: 0.5" imagen-autorespaldo="src: ./termino_e7016.png; texto: e7016"></a-entity>
+      <a-entity imagen-con-fallback="texto: E7016; src: #term_e7016; w: 1.5; h: 0.5"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_e7016" width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
     
     <!-- 8. E7018 (Ángulo 100.8°) -->
     <a-entity movimiento-vivo position="3.14 1.4 0.60" rotation="0 -100.8 0">
-      <a-entity geometry="primitive: plane; width: 1.5; height: 0.5" imagen-autorespaldo="src: ./termino_e7018.png; texto: e7018"></a-entity>
+      <a-entity imagen-con-fallback="texto: E7018; src: #term_e7018; w: 1.5; h: 0.5"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_e7018" width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 9. E7024 (Ángulo 115.2°) -->
     <a-entity movimiento-vivo position="2.90 1.9 1.36" rotation="0 -115.2 0">
-      <a-entity geometry="primitive: plane; width: 1.5; height: 0.5" imagen-autorespaldo="src: ./termino_e7024.png; texto: e7024"></a-entity>
+      <a-entity imagen-con-fallback="texto: E7024; src: #term_e7024; w: 1.5; h: 0.5"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_e7024" width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 10. Electrodo (Ángulo 129.6°) -->
     <a-entity movimiento-vivo position="2.46 1.1 2.04" rotation="0 -129.6 0">
-      <a-entity geometry="primitive: plane; width: 1.8; height: 0.6" imagen-autorespaldo="src: ./termino_electrodo.png; texto: electrodo"></a-entity>
+      <a-entity imagen-con-fallback="texto: Electrodo; src: #term_electrodo; w: 1.8; h: 0.6"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_electrodo" width="2.2" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 11. Escoria (Ángulo 144.0°) -->
     <a-entity movimiento-vivo position="1.88 2.3 2.59" rotation="0 -144.0 0">
-      <a-entity geometry="primitive: plane; width: 1.4; height: 0.35" imagen-autorespaldo="src: ./termino_escoria.png; texto: escoria"></a-entity>
+      <a-entity imagen-con-fallback="texto: Escoria; src: #term_escoria; w: 1.4; h: 0.35"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_escoria" width="1.8" height="0.75" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 12. Higroscópico (Ángulo 158.4°) -->
     <a-entity movimiento-vivo position="1.18 1.6 2.98" rotation="0 -158.4 0">
-      <a-entity geometry="primitive: plane; width: 1.6; height: 0.4" imagen-autorespaldo="src: ./termino_higroscopico.png; texto: higroscopico"></a-entity>
+      <a-entity imagen-con-fallback="texto: Higroscopico; src: #term_higroscopico; w: 1.6; h: 0.4"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_higroscopico" width="2.0" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 13. Intensidad de Corriente (Ángulo 172.8°) -->
     <a-entity movimiento-vivo position="0.40 1.9 3.18" rotation="0 -172.8 0">
-      <a-entity geometry="primitive: plane; width: 2.4; height: 0.6" imagen-autorespaldo="src: ./termino_intensidad-de-corriente.png; texto: intensidad-de-corriente"></a-entity>
+      <a-entity imagen-con-fallback="texto: Intensidad; src: #term_intensidad; w: 2.4; h: 0.6"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_intensidad" width="2.8" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 14. Ionización (Ángulo 187.2°) -->
     <a-entity movimiento-vivo position="-0.40 1.3 3.18" rotation="0 -187.2 0">
-      <a-entity geometry="primitive: plane; width: 1.6; height: 0.4" imagen-autorespaldo="src: ./termino_ionizacion.png; texto: ionizacion"></a-entity>
+      <a-entity imagen-con-fallback="texto: Ionizacion; src: #term_ionizacion; w: 1.6; h: 0.4"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_ionizacion" width="2.0" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 15. Masa (Ángulo 201.6°) -->
     <a-entity movimiento-vivo position="-1.18 2.1 2.98" rotation="0 -201.6 0">
-      <a-entity geometry="primitive: plane; width: 1.2; height: 0.3" imagen-autorespaldo="src: ./termino_masa.png; texto: masa"></a-entity>
+      <a-entity imagen-con-fallback="texto: Masa; src: #term_masa; w: 1.2; h: 0.3"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_masa" width="1.6" height="0.7" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 16. Penetración (Ángulo 216.0°) -->
     <a-entity movimiento-vivo position="-1.88 1.5 2.59" rotation="0 -216.0 0">
-      <a-entity geometry="primitive: plane; width: 1.6; height: 0.4" imagen-autorespaldo="src: ./termino_penetracion.png; texto: penetracion"></a-entity>
+      <a-entity imagen-con-fallback="texto: Penetracion; src: #term_penetracion; w: 1.6; h: 0.4"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_penetracion" width="2.0" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 17. Piqueta (Ángulo 230.4°) -->
     <a-entity movimiento-vivo position="-2.46 2.0 2.04" rotation="0 -230.4 0">
-      <a-entity geometry="primitive: plane; width: 1.4; height: 0.35" imagen-autorespaldo="src: ./termino_piqueta.png; texto: piqueta"></a-entity>
+      <a-entity imagen-con-fallback="texto: Piqueta; src: #term_piqueta; w: 1.4; h: 0.35"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_piqueta" width="1.8" height="0.75" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 18. Plasma (Ángulo 244.8°) -->
     <a-entity movimiento-vivo position="-2.90 1.2 1.36" rotation="0 -244.8 0">
-      <a-entity geometry="primitive: plane; width: 1.4; height: 0.35" imagen-autorespaldo="src: ./termino_plasma.png; texto: plasma"></a-entity>
+      <a-entity imagen-con-fallback="texto: Plasma; src: #term_plasma; w: 1.4; h: 0.35"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_plasma" width="1.8" height="0.75" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 19. Polaridad (Ángulo 259.2°) -->
     <a-entity movimiento-vivo position="-3.14 2.2 0.60" rotation="0 -259.2 0">
-      <a-entity geometry="primitive: plane; width: 1.5; height: 0.375" imagen-autorespaldo="src: ./termino_polaridad.png; texto: polaridad"></a-entity>
+      <a-entity imagen-con-fallback="texto: Polaridad; src: #term_polaridad; w: 1.5; h: 0.375"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_polaridad" width="1.9" height="0.775" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 20. Polaridad Directa DC- (Ángulo 273.6°) -->
     <a-entity movimiento-vivo position="-3.19 1.4 -0.20" rotation="0 -273.6 0">
-      <a-entity geometry="primitive: plane; width: 2.5; height: 0.5" imagen-autorespaldo="src: ./termino_polaridad-directa-dcminus.png; texto: polaridad-directa-dcminus"></a-entity>
+      <a-entity imagen-con-fallback="texto: Polaridad directa; src: #term_polaridad_directa; w: 2.5; h: 0.5"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_polaridad_directa" width="2.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 21. Polaridad Inversa DC+ (Ángulo 288.0°) -->
     <a-entity movimiento-vivo position="-3.04 1.8 -0.99" rotation="0 -288.0 0">
-      <a-entity geometry="primitive: plane; width: 2.2; height: 0.5" imagen-autorespaldo="src: ./termino_polaridad-inversa-dcplus.png; texto: polaridad-inversa-dcplus"></a-entity>
+      <a-entity imagen-con-fallback="texto: Polaridad inversa; src: #term_polaridad_inversa; w: 2.2; h: 0.5"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_polaridad_inversa" width="2.6" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 22. Revestimiento (Ángulo 302.4°) -->
     <a-entity movimiento-vivo position="-2.70 1.1 -1.71" rotation="0 -302.4 0">
-      <a-entity geometry="primitive: plane; width: 1.8; height: 0.5" imagen-autorespaldo="src: ./termino_revestimiento.png; texto: revestimiento"></a-entity>
+      <a-entity imagen-con-fallback="texto: Revestimiento; src: #term_revestimiento; w: 1.8; h: 0.5"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_revestimiento" width="2.2" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 23. Tensión (Ángulo 316.8°) -->
     <a-entity movimiento-vivo position="-2.19 2.3 -2.33" rotation="0 -316.8 0">
-      <a-entity geometry="primitive: plane; width: 1.4; height: 0.5" imagen-autorespaldo="src: ./termino_tension.png; texto: tension"></a-entity>
+      <a-entity imagen-con-fallback="texto: Tension; src: #term_tension; w: 1.4; h: 0.5"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_tension" width="1.8" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 24. WPS (Ángulo 331.2°) -->
     <a-entity movimiento-vivo position="-1.54 1.6 -2.80" rotation="0 -331.2 0">
-      <a-entity geometry="primitive: plane; width: 1.2; height: 0.5" imagen-autorespaldo="src: ./termino_wps.png; texto: wps"></a-entity>
+      <a-entity imagen-con-fallback="texto: WPS; src: #term_wps; w: 1.2; h: 0.5"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_wps" width="1.6" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
     <!-- 25. ZAT (Ángulo 345.6°) -->
     <a-entity movimiento-vivo position="-0.80 1.9 -3.10" rotation="0 -345.6 0">
-      <a-entity geometry="primitive: plane; width: 1.2; height: 0.5" imagen-autorespaldo="src: ./termino_zat.png; texto: zat"></a-entity>
+      <a-entity imagen-con-fallback="texto: ZAT; src: #term_zat; w: 1.2; h: 0.5"></a-entity>
       <a-plane class="interactable" palabra-interactiva="idConcepto: concept_zat" width="1.6" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
     </a-entity>
 
@@ -500,12 +499,16 @@
 
   <!-- PANEL DE EXPLICACIÓN DETALLADA (Frente al Usuario) -->
   <a-entity id="panel-info-dinamico" position="0 1.6 -1.8" scale="0.01 0.01 0.01" visible="false">
+    <!-- Marco de profundidad estético -->
     <a-plane width="2.40" height="1.44" color="#000000" opacity="0.8" material="shader: flat">
       <a-plane width="2.44" height="1.48" color="#e0d070" position="0 0 -0.01" opacity="0.3" material="shader: flat"></a-plane>
       
-      <!-- Ficha explicativa PNG dinámica con autorespaldo asíncrono -->
-      <a-entity id="card-contenido-img" geometry="primitive: plane; width: 2.38; height: 1.42" position="0 0 0.01"></a-entity>
+      <!-- Ficha explicativa PNG dinámica nativa -->
+      <a-image id="card-contenido-img" src="#fallback" width="2.38" height="1.42" position="0 0 0.01" material="shader: flat; transparent: true;"></a-image>
       
+      <!-- Texto 3D de Respaldo Exclusivo para Vista Previa si la imagen da error -->
+      <a-text id="panel-fallback-text" value="" visible="false" align="center" color="#ffffff" width="2.1" position="0 0.1 0.02" font="exo2bold"></a-text>
+
       <!-- Botón de Cierre interactivo -->
       <a-plane class="interactable" width="0.6" height="0.18" color="#992222" position="0 -0.85 0.02"
                animation__hover="property: scale; to: 1.1 1.1 1.1; dur: 150; startEvents: mouseenter"
@@ -516,15 +519,11 @@
     </a-plane>
   </a-entity>
 
-  <!-- RIG DE CÁMARA Y MANDOS QUEST 3 (Configuración completa de controles con giro de joystick en el mando derecho) -->
+  <!-- RIG DE CÁMARA Y MANDOS QUEST 3 (Configuración completa de controles) -->
   <a-entity id="rig">
     <a-camera position="0 1.6 0" wasd-controls look-controls="pointerLockEnabled: false"></a-camera>
-    
-    <!-- Mando Izquierdo (Láser Azul de Selección) -->
     <a-entity laser-controls="hand:left" raycaster="objects: .interactable; far:10; showLine: true" line="color: #4444aa; opacity: 0.5"></a-entity>
-    
-    <!-- Mando Derecho (Láser Dorado + Sistema de Giro de Espacio con Joystick) -->
-    <a-entity id="control-derecho" laser-controls="hand:right" raycaster="objects: .interactable; far:10; showLine: true" line="color: #e0d070; opacity: 0.5" joystick-turn></a-entity>
+    <a-entity id="control-derecho" laser-controls="hand:right" raycaster="objects: .interactable; far:10; showLine: true" line="color: #e0d070; opacity: 0.5"></a-entity>
   </a-entity>
 
 </a-scene>
