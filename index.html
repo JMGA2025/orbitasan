@@ -5,263 +5,400 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Órbita SAN - Soldadura VR & XR</title>
   
+  <!-- Librería de A-Frame VR -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <!-- Google Fonts para la pantalla de bienvenida 2D -->
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
   
   <style>
     body { margin: 0; overflow: hidden; background: #000; font-family: 'Montserrat', sans-serif; }
     #pantalla-inicio { position: fixed; inset: 0; z-index: 999; background: radial-gradient(circle at center, #050510 0%, #000000 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; padding: 20px; transition: opacity 1s ease-in-out; }
     #pantalla-inicio::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 50px 50px; opacity: 0.3; pointer-events: none; }
+    
     #pantalla-inicio h2 { font-size: 1.2rem; color: #a0a0ff; margin-bottom: 0; font-weight: 300; letter-spacing: 5px; text-transform: uppercase; }
     #pantalla-inicio h1 { font-family: 'Cinzel', serif; font-size: 4rem; color: #e0d070; margin-top: 0; margin-bottom: 0.5rem; letter-spacing: 6px; text-shadow: 0 0 20px rgba(224, 208, 112, 0.3); }
     #pantalla-inicio p { color: #bbb; font-size: 1.1rem; margin-bottom: 3rem; line-height: 1.6; max-width: 600px; }
+    
     #btn-entrar { padding: 16px 56px; background: rgba(224, 208, 112, 0.05); border: 1px solid #e0d070; border-radius: 50px; color: #e0d070; font-size: 1.2rem; cursor: pointer; letter-spacing: 3px; transition: all 0.4s ease; box-shadow: 0 0 15px rgba(224, 208, 112, 0.1); }
     #btn-entrar:hover { background: #e0d070; color: #000; box-shadow: 0 0 30px rgba(224, 208, 112, 0.6); transform: scale(1.05); }
-    #btn-vr { padding: 14px 48px; background: rgba(100, 180, 255, 0.05); border: 1px solid #64b4ff; border-radius: 50px; color: #64b4ff; font-size: 1.1rem; cursor: pointer; letter-spacing: 3px; transition: all 0.4s ease; box-shadow: 0 0 15px rgba(100, 180, 255, 0.1); margin-top: 12px; }
-    #btn-vr:hover { background: #64b4ff; color: #000; box-shadow: 0 0 30px rgba(100, 180, 255, 0.6); transform: scale(1.05); }
-    #btn-vr { padding: 14px 36px; }
-    #btn-mr { padding: 14px 36px; background: rgba(100, 255, 180, 0.05); border: 1px solid #40e090; border-radius: 50px; color: #40e090; font-size: 1.1rem; cursor: pointer; letter-spacing: 3px; transition: all 0.4s ease; box-shadow: 0 0 15px rgba(64, 224, 144, 0.1); }
-    #btn-mr:hover { background: #40e090; color: #000; box-shadow: 0 0 30px rgba(64, 224, 144, 0.6); transform: scale(1.05); }
-    #btn-vr-nativo, #btn-ar-nativo { display: none !important; }
   </style>
 
   <script>
-    // ─────────────────────────────────────────────────
-    // BRIDGE Quest 3: convierte triggerdown del láser en evento 'click' de A-Frame
-    // Sin este componente los planos .interactable no responden al gatillo
-    // ─────────────────────────────────────────────────
-    AFRAME.registerComponent('quest-click-bridge', {
-      init: function () {
-        var el = this.el;
-        // El controlador emite 'triggerdown' en el mando; laser-controls lo propaga
-        // como 'click' SOLO si el raycaster está en la misma entidad que el mando.
-        // Para garantizarlo escuchamos ambas vías:
-        el.addEventListener('triggerdown', function () { el.emit('click'); });
-        // También 'mousedown' para compatibilidad PC
-        el.addEventListener('mousedown', function () { el.emit('click'); });
+    // Diccionario de conceptos con ortografía y explicaciones impecables en Español
+    const DICCIONARIO_SAN = {
+      'concept_ac': {
+        titulo: 'Corriente Alterna (AC)',
+        desc: 'Corriente eléctrica en la que la dirección del flujo de electrones\ncambia periódicamente. Muy útil en soldadura TIG de aluminio\nya que ayuda a romper la resistente capa de óxido superficial.'
+      },
+      'concept_arco': {
+        titulo: 'Arco Eléctrico',
+        desc: 'Descarga eléctrica continua a través de una columna de gas ionizado\nentre el electrodo y la pieza. Genera el intenso calor necesario\npara fundir los metales y realizar la unión.'
+      },
+      'concept_bano': {
+        titulo: 'Baño de Fusión',
+        desc: 'Zona de metal líquido creada por el calor del arco eléctrico.\nEs donde se mezclan el metal base y el de aportación.\nRequiere protección constante para evitar la contaminación atmosférica.'
+      },
+      'concept_cordon': {
+        titulo: 'Cordón de Soldadura',
+        desc: 'La junta metálica resultante tras el paso del arco y la\nsolidificación del baño de fusión. Sus características mecánicas\ndependen de la velocidad, técnica y materiales utilizados.'
+      },
+      'concept_dc': {
+        titulo: 'Corriente Continua (DC)',
+        desc: 'Flujo constante de electrones en una sola dirección.\nOfrece un arco muy estable y uniforme. Es el tipo de corriente\nmás utilizado en soldadura por arco manual (SMAW).'
+      },
+      'concept_e6013': {
+        titulo: 'Electrodo E6013',
+        desc: 'Electrodo con revestimiento de rutilo de fácil manejo.\nProduce un arco suave, pocas salpicaduras y escoria fácil de retirar.\nIdeal para chapas finas y trabajos generales de carpintería metálica.'
+      },
+      'concept_e7016': {
+        titulo: 'Electrodo E7016',
+        desc: 'Electrodo de bajo hidrógeno (básico) diseñado para soldadura\nen todas las posiciones. Ofrece excelentes propiedades mecánicas\ny alta resistencia al agrietamiento.'
+      },
+      'concept_e7018': {
+        titulo: 'Electrodo E7018',
+        desc: 'Electrodo básico con polvo de hierro en su revestimiento.\nOfrece una alta velocidad de depósito, excelentes propiedades al impacto\ny una soldadura de calidad radiográfica.'
+      },
+      'concept_e7024': {
+        titulo: 'Electrodo E7024',
+        desc: 'Electrodo de rutilo con alto contenido de polvo de hierro.\nDiseñado para soldar a alta velocidad en posición plana y filete horizontal,\ncon un gran rendimiento de depósito.'
+      },
+      'concept_electrodo': {
+        titulo: 'Electrodo',
+        desc: 'Varilla metálica que conduce la corriente para cebar el arco.\nEn SMAW, el electrodo revestido se consume para aportar el metal\nde unión y proveer gases protectores.'
+      },
+      'concept_escoria': {
+        titulo: 'Escoria',
+        desc: 'Capa vitrificada que flota sobre el baño de fusión y se solidifica\nencima del cordón. Protege el metal caliente del oxígeno atmosférico\ny debe retirarse una vez enfriado.'
+      },
+      'concept_higroscopico': {
+        titulo: 'Higroscópico',
+        desc: 'Propiedad de ciertos materiales, como los electrodos básicos (E7018),\nde absorber humedad del aire. Requieren ser almacenados en hornos\npara evitar defectos como poros o fisuras por hidrógeno.'
+      },
+      'concept_intensidad': {
+        titulo: 'Intensidad de Corriente',
+        desc: 'La cantidad de flujo de corriente (Amperios) que circula por el arco.\nEs el parámetro principal que controla el calor aportado, la penetración\ny la tasa de fusión del electrodo.'
+      },
+      'concept_ionizacion': {
+        titulo: 'Ionización',
+        desc: 'Proceso por el cual los átomos del gas protector pierden o ganan\nelectrones, permitiendo el paso de corriente eléctrica. Es vital\npara establecer y mantener la estabilidad del arco.'
+      },
+      'concept_masa': {
+        titulo: 'Conexión de Masa',
+        desc: 'Cable y pinza que conectan la pieza de trabajo a la fuente de soldadura\npara cerrar el circuito eléctrico. Una mala conexión puede causar\ninestabilidad del arco o soplo magnético.'
+      },
+      'concept_penetracion': {
+        titulo: 'Penetración',
+        desc: 'La profundidad a la que el metal fundido se extiende dentro de la\njunta o del metal base. Es crucial para garantizar la resistencia\nmecánica y la integridad de la unión soldada.'
+      },
+      'concept_piqueta': {
+        titulo: 'Piqueta',
+        desc: 'Herramienta manual metálica con extremos en punta y cincel.\nSe utiliza para retirar por golpeo la escoria sólida que cubre\nel cordón de soldadura recién ejecutado.'
+      },
+      'concept_plasma': {
+        titulo: 'Plasma',
+        desc: 'El cuarto estado de la materia. Consiste en un gas altamente ionizado\na temperaturas extremas que conduce la corriente eléctrica,\nformando la columna central del arco de soldadura.'
+      },
+      'concept_polaridad': {
+        titulo: 'Polaridad',
+        desc: 'Establece la conexión de los cables (+ o -) en corriente continua.\nDetermina la distribución del calor: aproximadamente un 70% del calor\nse concentra en el polo positivo.'
+      },
+      'concept_polaridad_directa': {
+        titulo: 'Polaridad Directa (DC-)',
+        desc: 'El electrodo se conecta al polo negativo (-) y la pieza al positivo (+).\nConcentra el calor en la pieza, logrando una mayor penetración\ny un menor desgaste del electrodo.'
+      },
+      'concept_polaridad_inversa': {
+        titulo: 'Polaridad Inversa (DC+)',
+        desc: 'El electrodo se conecta al polo positivo (+) y la pieza al negativo (-).\nConcentra más calor en el electrodo, ideal para soldaduras rápidas,\nchapas finas o pasadas de raíz.'
+      },
+      'concept_revestimiento': {
+        titulo: 'Revestimiento',
+        desc: 'Capa química que cubre el núcleo del electrodo. Al quemarse,\ngenera gases protectores, forma la escoria limpiadora, estabiliza\nel arco y puede aportar elementos de aleación.'
+      },
+      'concept_tension': {
+        titulo: 'Tensión (Voltaje)',
+        desc: 'Parámetro eléctrico que mide la fuerza que impulsa los electrones.\nEn soldadura, el voltaje determina principalmente la longitud del arco\ny el ancho del cordón depositado.'
+      },
+      'concept_wps': {
+        titulo: 'WPS (Especificación)',
+        desc: 'Welding Procedure Specification. Documento técnico que detalla las\nvariables requeridas (corriente, materiales, preparación, etc.)\npara realizar una soldadura de calidad aprobada.'
+      },
+      'concept_zat': {
+        titulo: 'ZAT (Zona Afectada)',
+        desc: 'Región del metal base que no llega a fundirse, pero cuya microestructura\ny propiedades mecánicas se alteran por el intenso calor del arco.\nSuele ser la zona más crítica ante fallos mecánicos.'
       }
-    });
-
-    // Mapeo preciso entre el ID de concepto y la ID de la tarjeta explicativa
-    const ASOCIACIONES_SAN = {
-      'concept_ac':                { cardId: '#card_ac' },
-      'concept_arco':              { cardId: '#card_arco' },
-      'concept_bano':              { cardId: '#card_bano' },
-      'concept_cordon':            { cardId: '#card_cordon' },
-      'concept_dc':                { cardId: '#card_dc' },
-      'concept_e6013':             { cardId: '#card_e6013' },
-      'concept_e7016':             { cardId: '#card_e7016' },
-      'concept_e7018':             { cardId: '#card_e7018' },
-      'concept_e7024':             { cardId: '#card_e7024' },
-      'concept_electrodo':         { cardId: '#card_electrodo' },
-      'concept_escoria':           { cardId: '#card_escoria' },
-      'concept_higroscopico':      { cardId: '#card_higroscopico' },
-      'concept_intensidad':        { cardId: '#card_intensidad' },
-      'concept_ionizacion':        { cardId: '#card_ionizacion' },
-      'concept_masa':              { cardId: '#card_masa' },
-      'concept_penetracion':       { cardId: '#card_penetracion' },
-      'concept_piqueta':           { cardId: '#card_piqueta' },
-      'concept_plasma':            { cardId: '#card_plasma' },
-      'concept_polaridad':         { cardId: '#card_polaridad' },
-      'concept_polaridad_directa': { cardId: '#card_polaridad_directa' },
-      'concept_polaridad_inversa': { cardId: '#card_polaridad_inversa' },
-      'concept_revestimiento':     { cardId: '#card_revestimiento' },
-      'concept_tension':           { cardId: '#card_tension' },
-      'concept_wps':               { cardId: '#card_wps' },
-      'concept_zat':               { cardId: '#card_zat' }
     };
 
-    // ─────────────────────────────────────────────────
-    // FIX #9: movimiento-vivo guarda el id del timeout
-    //         y lo limpia en remove() para no acumular
-    // ─────────────────────────────────────────────────
+    // Componente de oscilación y flotación sutil e independiente
     AFRAME.registerComponent('movimiento-vivo', {
       init: function () {
         this.homePos = new THREE.Vector3().copy(this.el.object3D.position);
-        this._timerId = null;
         this.proximoDestino();
       },
       proximoDestino: function () {
-        var el = this.el;
-        if (!el || !el.parentNode) return;
-        var targetX = this.homePos.x + (Math.random() - 0.5) * 0.8;
-        var targetY = this.homePos.y + (Math.random() - 0.5) * 0.6;
-        var targetZ = this.homePos.z + (Math.random() - 0.5) * 0.6;
-        var duracion = 5000 + Math.random() * 4000;
+        const el = this.el;
+        if (!el) return;
+        
+        // Desplazamiento sutil e independiente en ejes X, Y y Z
+        const targetX = this.homePos.x + (Math.random() - 0.5) * 0.8;
+        const targetY = this.homePos.y + (Math.random() - 0.5) * 0.6;
+        const targetZ = this.homePos.z + (Math.random() - 0.5) * 0.6;
+        const duracion = 5000 + Math.random() * 4000;
+
         el.setAttribute('animation__pos', {
           property: 'position',
-          to: targetX + ' ' + targetY + ' ' + targetZ,
+          to: `${targetX} ${targetY} ${targetZ}`,
           dur: duracion,
           easing: 'easeInOutSine'
         });
-        this._timerId = setTimeout(function () {
-          if (this.el && this.el.parentNode) this.proximoDestino();
-        }.bind(this), duracion);
-      },
-      remove: function () {
-        // FIX #9: limpieza del timer al destruir la entidad
-        if (this._timerId) clearTimeout(this._timerId);
+        
+        setTimeout(() => { if (this.el) this.proximoDestino(); }, duracion);
       }
     });
 
-    // Componente de carga de imágenes con fallback textual
-    AFRAME.registerComponent('imagen-con-fallback', {
+    // Componente de renderizado de texto 100% nítido, nativo de WebGL mediante Canvas local
+    AFRAME.registerComponent('canvas-termino', {
       schema: {
-        texto: { type: 'string' },
-        src:   { type: 'string' },
-        w:     { type: 'number', default: 1.2 },
-        h:     { type: 'number', default: 0.4 }
+        texto: {type: 'string', default: ''}
       },
       init: function () {
-        var el   = this.el;
-        var data = this.data;
-        var img  = document.createElement('a-image');
-        img.setAttribute('src', data.src);
-        img.setAttribute('width', data.w);
-        img.setAttribute('height', data.h);
-        img.setAttribute('transparent', 'true');
-        el.appendChild(img);
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = 512;
+        this.canvas.height = 128;
+        this.ctx = this.canvas.getContext('2d');
+        
+        // Asignamos la textura nativa de A-Frame apuntando a este canvas
+        this.el.setAttribute('material', {
+          src: this.canvas,
+          transparent: true,
+          shader: 'flat',
+          side: 'double'
+        });
+      },
+      update: function () {
+        const ctx = this.ctx;
+        if (!ctx) return;
 
-        var testImg  = new Image();
-        var assetEl  = document.querySelector(data.src);
-        testImg.src  = assetEl ? assetEl.getAttribute('src') : '';
-        testImg.onerror = function () {
-          img.setAttribute('visible', 'false');
-          var txt = document.createElement('a-text');
-          txt.setAttribute('value', data.texto);
-          txt.setAttribute('align', 'center');
-          txt.setAttribute('color', '#ffffff');
-          txt.setAttribute('font', 'exo2bold');
-          txt.setAttribute('width', '4');
-          el.appendChild(txt);
-        };
+        ctx.clearRect(0, 0, 512, 128);
+
+        // Borde dorado de diseño
+        ctx.strokeStyle = '#e0d070';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(8, 8, 496, 112);
+
+        // Fondo oscuro del término
+        ctx.fillStyle = 'rgba(5, 5, 15, 0.85)';
+        ctx.fillRect(10, 10, 492, 108);
+
+        // Escribir el concepto en perfecta ortografía
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 36px Montserrat, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.data.texto, 256, 64);
+
+        // Forzar actualización de la textura en el motor de renderizado
+        var map = this.el.getObject3D('mesh')?.material?.map;
+        if (map) {
+          map.needsUpdate = true;
+        } else {
+          this.el.addEventListener('object3dset', () => {
+            var map2 = this.el.getObject3D('mesh')?.material?.map;
+            if (map2) map2.needsUpdate = true;
+          });
+        }
       }
     });
 
-    // ─────────────────────────────────────────────────
-    // FIX #3 + #4: palabra-interactiva usa solo eventos
-    //              A-Frame (click, mouseenter, mouseleave)
-    //              — no onclick HTML ni cursor de ratón
-    // ─────────────────────────────────────────────────
-    AFRAME.registerComponent('palabra-interactiva', {
-      schema: { idConcepto: { type: 'string' } },
+    // Componente que dibuja de forma instantánea en un Canvas 2D local las fichas explicativas de texto
+    AFRAME.registerComponent('canvas-tarjeta', {
+      schema: {
+        titulo: {type: 'string', default: ''},
+        desc: {type: 'string', default: ''}
+      },
       init: function () {
-        var el   = this.el;
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = 1024;
+        this.canvas.height = 512;
+        this.ctx = this.canvas.getContext('2d');
+        
+        this.el.setAttribute('material', {
+          src: this.canvas,
+          transparent: true,
+          shader: 'flat',
+          side: 'double'
+        });
+      },
+      update: function () {
+        const ctx = this.ctx;
+        if (!ctx) return;
+
+        // Limpiar lienzo
+        ctx.clearRect(0, 0, 1024, 512);
+
+        // Fondo de tarjeta oscuro futurista
+        ctx.fillStyle = '#05050f';
+        ctx.fillRect(0, 0, 1024, 512);
+
+        // Borde dorado SAN
+        ctx.strokeStyle = '#e0d070';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(15, 15, 994, 482);
+
+        // Título de la tarjeta
+        ctx.fillStyle = '#e0d070';
+        ctx.font = 'bold 44px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(this.data.titulo, 512, 50);
+
+        // Línea divisoria elegante
+        ctx.strokeStyle = '#e0d070';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(120, 120);
+        ctx.lineTo(904, 120);
+        ctx.stroke();
+
+        // Descripción con salto de línea interpretado perfectamente
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '32px sans-serif';
+        ctx.textBaseline = 'top';
+        
+        const lines = this.data.desc.split('\n');
+        let y = 160;
+        lines.forEach(line => {
+          ctx.fillText(line, 512, y);
+          y += 45;
+        });
+
+        var map = this.el.getObject3D('mesh')?.material?.map;
+        if (map) {
+          map.needsUpdate = true;
+        } else {
+          this.el.addEventListener('object3dset', () => {
+            var map2 = this.el.getObject3D('mesh')?.material?.map;
+            if (map2) map2.needsUpdate = true;
+          });
+        }
+      }
+    });
+
+    // Generador automático tridimensional de la nube de 25 conceptos
+    AFRAME.registerComponent('generar-nube', {
+      init: function () {
+        const container = this.el;
+        const radius = 3.2;
+        const total = Object.keys(DICCIONARIO_SAN).length;
+        const step = (Math.PI * 2) / total;
+
+        let i = 0;
+        for (const [key, val] of Object.entries(DICCIONARIO_SAN)) {
+          const angle = i * step;
+          const x = radius * Math.sin(angle);
+          const z = -radius * Math.cos(angle);
+          const y = 1.3 + (i % 3) * 0.35; // Alturas alternas para evitar superposiciones
+
+          // Ángulo de rotación para mirar al centro exacto del usuario (0, 0)
+          const rotY = -(angle * 180 / Math.PI);
+
+          const wrapper = document.createElement('a-entity');
+          wrapper.setAttribute('movimiento-vivo', '');
+          wrapper.setAttribute('position', `${x} ${y} ${z}`);
+          wrapper.setAttribute('rotation', `0 ${rotY} 0`);
+
+          // Plano nativo para renderizar la textura generada localmente
+          const plane = document.createElement('a-plane');
+          plane.setAttribute('width', '1.2');
+          plane.setAttribute('height', '0.4');
+          plane.setAttribute('canvas-termino', { texto: val.titulo.split(' (') }); // Título resumido para el óvalo flotante
+
+          // Hitbox transparente ampliada para facilitar la selección con el láser
+          const collider = document.createElement('a-plane');
+          collider.setAttribute('class', 'interactable');
+          collider.setAttribute('palabra-interactiva', { idConcepto: key });
+          collider.setAttribute('width', '1.4');
+          collider.setAttribute('height', '0.6');
+          collider.setAttribute('material', 'opacity: 0; transparent: true');
+          collider.setAttribute('position', '0 0 0.01');
+
+          wrapper.appendChild(plane);
+          wrapper.appendChild(collider);
+          container.appendChild(wrapper);
+
+          i++;
+        }
+      }
+    });
+
+    // Componente de control interactivo para abrir los conceptos al apuntar y hacer clic
+    AFRAME.registerComponent('palabra-interactiva', {
+      schema: { idConcepto: {type: 'string'} },
+      init: function () {
+        var el = this.el;
         var data = this.data;
 
+        // Efecto Hover: Resaltar en dorado de manera interactiva
         el.addEventListener('mouseenter', function () {
           var parent = el.parentNode;
-          var img = parent.querySelector('a-image');
-          if (img) { img.setAttribute('color', '#e0d070'); img.setAttribute('scale', '1.25 1.25 1.25'); }
-          var txt = parent.querySelector('a-text');
-          if (txt) { txt.setAttribute('color', '#e0d070'); txt.setAttribute('scale', '1.25 1.25 1.25'); }
-        });
-
-        el.addEventListener('mouseleave', function () {
-          var parent = el.parentNode;
-          var img = parent.querySelector('a-image');
-          if (img) { img.setAttribute('color', '#ffffff'); img.setAttribute('scale', '1 1 1'); }
-          var txt = parent.querySelector('a-text');
-          if (txt) { txt.setAttribute('color', '#ffffff'); txt.setAttribute('scale', '1 1 1'); }
-        });
-
-        el.addEventListener('click', function () {
-          var asociacion = ASOCIACIONES_SAN[data.idConcepto];
-          if (!asociacion) return;
-
-          var panel             = document.querySelector('#panel-info-dinamico');
-          var cardImagen        = document.querySelector('#card-contenido-img');
-          var panelFallbackText = document.querySelector('#panel-fallback-text');
-
-          cardImagen.setAttribute('src', asociacion.cardId);
-
-          var testImg = new Image();
-          var assetEl = document.querySelector(asociacion.cardId);
-          testImg.src = assetEl ? assetEl.getAttribute('src') : '';
-          testImg.onload = function () {
-            cardImagen.setAttribute('visible', 'true');
-            if (panelFallbackText) panelFallbackText.setAttribute('visible', 'false');
-          };
-          testImg.onerror = function () {
-            cardImagen.setAttribute('visible', 'false');
-            if (panelFallbackText) {
-              panelFallbackText.setAttribute('visible', 'true');
-              var nombre = asociacion.cardId.replace('#card_', '').replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase();
-              panelFallbackText.setAttribute('value', 'CONCEPTO:\n\n' + nombre + '\n\n[Tarjeta disponible al subir las imágenes a tu servidor]');
-            }
-          };
-
-          panel.setAttribute('scale', '0.01 0.01 0.01');
-          panel.setAttribute('visible', 'true');
-          // Pequeño delay para que el DOM aplique scale antes de arrancar la animación
-          setTimeout(function() {
-            panel.setAttribute('animation__abrir', 'property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 450; easing: easeOutBack');
-          }, 20);
-        });
-      }
-    });
-
-    // Componente para el botón de cierre del panel
-    // FIX #4: usa addEventListener en lugar de onclick HTML
-    AFRAME.registerComponent('boton-cerrar', {
-      init: function () {
-        var el = this.el;
-        el.addEventListener('mouseenter', function () { el.setAttribute('scale', '1.1 1.1 1.1'); });
-        el.addEventListener('mouseleave', function () { el.setAttribute('scale', '1 1 1'); });
-        el.addEventListener('click', function () {
-          var p = document.querySelector('#panel-info-dinamico');
-          // Animación de cierre primero, luego ocultar
-          p.setAttribute('animation__cerrar', 'property: scale; to: 0.01 0.01 0.01; dur: 200; easing: easeInBack');
-          setTimeout(function() {
-            p.setAttribute('visible', 'false');
-          }, 210);
-        });
-      }
-    });
-
-    // Componente botón mute
-    AFRAME.registerComponent('btn-mute-plane', {
-      init: function () {
-        var el = this.el;
-        var silenciado = false;
-        el.addEventListener('mouseenter', function () { el.setAttribute('color', '#333366'); });
-        el.addEventListener('mouseleave', function () { el.setAttribute('color', '#222244'); });
-        el.addEventListener('click', function () {
-          silenciado = !silenciado;
-          var audio = document.getElementById('musica-fondo');
-          var txt   = document.querySelector('#txt-mute');
-          if (silenciado) {
-            if (audio) audio.pause();
-            txt.setAttribute('value', '♪ SILENCIO');
-            txt.setAttribute('color', '#ff6666');
-            el.setAttribute('color', '#442222');
-          } else {
-            if (audio) audio.play().catch(function(){});
-            txt.setAttribute('value', '♪ MÚSICA');
-            txt.setAttribute('color', '#a0a0ff');
-            el.setAttribute('color', '#222244');
+          var plane = parent.querySelector('a-plane[canvas-termino]');
+          if (plane) {
+            plane.setAttribute('scale', '1.15 1.15 1.15');
           }
         });
+
+        // Efecto Leave: Restaurar estado original
+        el.addEventListener('mouseleave', function () {
+          var parent = el.parentNode;
+          var plane = parent.querySelector('a-plane[canvas-termino]');
+          if (plane) {
+            plane.setAttribute('scale', '1 1 1');
+          }
+        });
+
+        // Selección: Mostrar información explicativa en el panel frontal
+        el.addEventListener('click', function () {
+          var asociacion = DICCIONARIO_SAN[data.idConcepto];
+          if (!asociacion) return;
+
+          var panel = document.querySelector('#panel-info-dinamico');
+          
+          // Actualizar el Canvas explicativo con el título y la descripción
+          panel.setAttribute('canvas-tarjeta', {
+            titulo: asociacion.titulo,
+            desc: asociacion.desc
+          });
+          
+          panel.setAttribute('visible', 'true');
+          panel.setAttribute('animation__abrir', 'property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 450; easing: easeOutBack');
+        });
       }
     });
 
-    // Componente VR/XR para alternar entorno
+    // Componente para alternar entre el modo VR (Cielo espacial) e XR (Passthrough/Mixto)
     AFRAME.registerComponent('control-entorno', {
-      schema: { modo: { type: 'string' } },
+      schema: { modo: {type: 'string'} },
       init: function () {
-        var el   = this.el;
+        var el = this.el;
         var modo = this.data.modo;
-        el.addEventListener('mouseenter', function () { el.setAttribute('scale', '1.1 1.1 1.1'); });
-        el.addEventListener('mouseleave', function () { el.setAttribute('scale', '1 1 1'); });
+
+        el.addEventListener('mouseenter', function () {
+          el.setAttribute('scale', '1.1 1.1 1.1');
+        });
+        el.addEventListener('mouseleave', function () {
+          el.setAttribute('scale', '1 1 1');
+        });
+
         el.addEventListener('click', function () {
-          var scene    = document.querySelector('a-scene');
+          var scene = document.querySelector('a-scene');
           var estrellas = document.querySelector('#estrellas');
-          var btnVR    = document.querySelector('#btn-vr-active');
-          var btnXR    = document.querySelector('#btn-xr-active');
+          var btnVR = document.querySelector('#btn-vr-active');
+          var btnXR = document.querySelector('#btn-xr-active');
+
           if (modo === 'xr') {
             scene.setAttribute('fog', 'density: 0');
             estrellas.setAttribute('visible', 'false');
             scene.setAttribute('background', 'transparent: true; color: #000');
+            
             btnVR.setAttribute('color', '#111122');
             btnXR.setAttribute('color', '#e0d070');
             btnVR.querySelector('a-text').setAttribute('color', '#ffffff');
@@ -270,6 +407,7 @@
             scene.setAttribute('fog', 'type: exponential; color: #000008; density: 0.06');
             estrellas.setAttribute('visible', 'true');
             scene.setAttribute('background', 'color: #000005');
+            
             btnVR.setAttribute('color', '#e0d070');
             btnXR.setAttribute('color', '#111122');
             btnVR.querySelector('a-text').setAttribute('color', '#000000');
@@ -282,451 +420,136 @@
 </head>
 <body>
 
-<!-- Pantalla de Bienvenida 2D (solo visible en navegador/PC) -->
+<!-- Pantalla de Bienvenida (Capa 2D) -->
 <div id="pantalla-inicio">
   <h2>MÓDULO SAN</h2>
   <h1>ÓRBITA SAN</h1>
   <p>Glosario de Soldadura en Atmósfera Natural interactivo.<br>
-  <small style="font-size:0.85rem;color:#888;margin-top:10px;display:inline-block;">
-    Apunta a las palabras flotantes y pulsa el gatillo de tus mandos de Meta Quest 3,<br>o haz clic en PC.
-  </small></p>
-  <button id="btn-entrar" onclick="iniciarDesdeBoton()">ENTRAR (PC)</button>
-  <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
-    <button id="btn-vr" onclick="entrarEnVR()">ENTRAR EN VR ◎</button>
-    <button id="btn-mr" onclick="entrarEnMR()">ENTRAR EN MR ◈</button>
-  </div>
+  <small style="font-size: 0.85rem; color:#888; margin-top:10px; display:inline-block;">Apunta a las palabras flotantes y pulsa el gatillo de tus mandos de Meta Quest 3 o haz clic en PC.</small></p>
+  <button id="btn-entrar" onclick="iniciar()">ENTRAR</button>
 </div>
 
-<!-- Botones nativos de A-Frame: ocultos visualmente pero necesarios para la API WebXR -->
-<button id="btn-vr-nativo" style="display:none"></button>
-<button id="btn-ar-nativo" style="display:none"></button>
-
-<!-- ─────────────────────────────────────────────────────
-     FIX #1: webxr — requiredFeatures y optionalFeatures correctos
-     FIX #2: raycaster y cursor eliminados de a-scene
-     FIX #7: xr-mode-ui desactivado para no mostrar botón nativo
-     ───────────────────────────────────────────────────── -->
-<a-scene
-  background="color: #000005"
-  fog="type: exponential; color: #000008; density: 0.06"
-  renderer="antialias: true; colorManagement: true; alpha: true;"
-  webxr="requiredFeatures: local-floor; optionalFeatures: hand-tracking,bounded-floor,layers"
-  xr-mode-ui="enabled: true; enterVRButton: #btn-vr-nativo; enterARButton: #btn-ar-nativo">
-
-  <!-- FIX #5: timeout subido a 10000 ms para red lenta del visor -->
-  <a-assets timeout="10000">
-    <!-- Tarjetas explicativas -->
-    <img id="card_ac"                src="./ac.png">
-    <img id="card_arco"              src="./arco-electrico.png">
-    <img id="card_bano"              src="./bano-de-fusion.png">
-    <img id="card_cordon"            src="./cordon.png">
-    <img id="card_dc"                src="./dc.png">
-    <img id="card_e6013"             src="./e6013.png">
-    <img id="card_e7016"             src="./e7016.png">
-    <img id="card_e7018"             src="./e7018.png">
-    <img id="card_e7024"             src="./e7024.png">
-    <img id="card_electrodo"         src="./electrodo.png">
-    <img id="card_escoria"           src="./escoria.png">
-    <img id="card_higroscopico"      src="./higroscopico.png">
-    <img id="card_intensidad"        src="./intensidad-de-corriente.png">
-    <img id="card_ionizacion"        src="./ionizacion.png">
-    <img id="card_masa"              src="./masa.png">
-    <img id="card_penetracion"       src="./penetracion.png">
-    <img id="card_piqueta"           src="./piqueta.png">
-    <img id="card_plasma"            src="./plasma.png">
-    <img id="card_polaridad"         src="./polaridad.png">
-    <img id="card_polaridad_directa" src="./polaridad-directa-dcminus.png">
-    <img id="card_polaridad_inversa" src="./polaridad-inversa-dcplus.png">
-    <img id="card_revestimiento"     src="./revestimiento.png">
-    <img id="card_tension"           src="./tension.png">
-    <img id="card_wps"               src="./wps.png">
-    <img id="card_zat"               src="./zat.png">
-
-    <!-- Términos flotantes -->
-    <img id="term_ac"                src="./termino_ac.png">
-    <img id="term_arco"              src="./termino_arco-electrico.png">
-    <img id="term_bano"              src="./termino_bano-de-fusion.png">
-    <img id="term_cordon"            src="./termino_cordon.png">
-    <img id="term_dc"                src="./termino_dc.png">
-    <img id="term_e6013"             src="./termino_e6013.png">
-    <img id="term_e7016"             src="./termino_e7016.png">
-    <img id="term_e7018"             src="./termino_e7018.png">
-    <img id="term_e7024"             src="./termino_e7024.png">
-    <img id="term_electrodo"         src="./termino_electrodo.png">
-    <img id="term_escoria"           src="./termino_escoria.png">
-    <img id="term_higroscopico"      src="./termino_higroscopico.png">
-    <img id="term_intensidad"        src="./termino_intensidad-de-corriente.png">
-    <img id="term_ionizacion"        src="./termino_ionizacion.png">
-    <img id="term_masa"              src="./termino_masa.png">
-    <img id="term_penetracion"       src="./termino_penetracion.png">
-    <img id="term_piqueta"           src="./termino_piqueta.png">
-    <img id="term_plasma"            src="./termino_plasma.png">
-    <img id="term_polaridad"         src="./termino_polaridad.png">
-    <img id="term_polaridad_directa" src="./termino_polaridad-directa-dcminus.png">
-    <img id="term_polaridad_inversa" src="./termino_polaridad-inversa-dcplus.png">
-    <img id="term_revestimiento"     src="./termino_revestimiento.png">
-    <img id="term_tension"           src="./termino_tension.png">
-    <img id="term_wps"               src="./termino_wps.png">
-    <img id="term_zat"               src="./termino_zat.png">
-
-    <!-- Música de fondo -->
-    <audio id="musica-fondo" src="./orbitaSAN.mp3" loop preload="auto"></audio>
-
-    <!-- Textura de fallback (1×1 px transparente) -->
-    <img id="fallback" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">
-  </a-assets>
-
-  <!-- Luces -->
+<!-- Escena VR de A-Frame libre de bloqueos de assets -->
+<a-scene background="color:#000005" 
+         fog="type: exponential; color: #000008; density: 0.06" 
+         renderer="antialias: true; colorManagement: true;"
+         webxr="referenceSpaceType: localFloor; optionalFeatures: pass-through;"
+         cursor="rayOrigin: mouse"
+         raycaster="objects: .interactable; interval: 100">
+  
+  <!-- Luces estéticas de ambiente y apoyo -->
   <a-light type="ambient" color="#111122"></a-light>
   <a-light type="point" position="0 5 0" color="#5555aa" intensity="0.6"></a-light>
-
-  <!-- FIX #9: estrellas como esferas simples, cantidad reducida para la GPU del Quest -->
+  
+  <!-- Espacio estelar dinámico -->
   <a-entity id="estrellas"></a-entity>
 
-  <!-- BOTÓN MUTE DE MÚSICA — esquina inferior izquierda del campo de visión -->
-  <a-entity id="panel-mute" position="1.1 0.5 -1.2" rotation="-30 -35 0">
-    <a-plane class="interactable" quest-click-bridge id="btn-mute-plane"
-             width="0.55" height="0.20" color="#222244" opacity="0.95"
-             material="shader:flat">
-      <a-plane width="0.57" height="0.22" color="#a0a0ff" position="0 0 -0.01"
-               opacity="0.25" material="shader:flat"></a-plane>
-      <a-text id="txt-mute" value="♪ MÚSICA" font="exo2bold" align="center"
-              color="#a0a0ff" width="1.6" position="0 0 0.01"></a-text>
-    </a-plane>
-  </a-entity>
-
-  <!-- CONSOLA DE ENTORNO (VR / XR) -->
+  <!-- PANEL DE SELECCIÓN DE ENTORNO DISCRETO (VR vs XR) -->
   <a-entity id="consola-entorno" position="-1.0 0.7 -1.2" rotation="-40 40 0">
     <a-plane width="0.9" height="0.6" color="#000" opacity="0.95" material="shader:flat">
       <a-plane width="0.93" height="0.63" color="#e0d070" position="0 0 -0.01" opacity="0.3" material="shader:flat"></a-plane>
       <a-text value="ENTORNO" font="exo2bold" align="center" color="#e0d070" width="2.2" position="0 0.20 0.01"></a-text>
-
-      <a-plane id="btn-vr-active" class="interactable" quest-click-bridge control-entorno="modo: vr"
-               width="0.75" height="0.13" color="#e0d070" position="0 0.04 0.02" material="shader:flat">
+      
+      <!-- Botón Modo VR -->
+      <a-plane id="btn-vr-active" class="interactable" control-entorno="modo: vr" width="0.75" height="0.13" color="#e0d070" position="0 0.04 0.02" material="shader:flat">
         <a-text value="VR ESPACIO" font="exo2bold" align="center" color="#000" width="1.8"></a-text>
       </a-plane>
 
-      <a-plane id="btn-xr-active" class="interactable" quest-click-bridge control-entorno="modo: xr"
-               width="0.75" height="0.13" color="#111122" position="0 -0.13 0.02" material="shader:flat">
+      <!-- Botón Modo XR -->
+      <a-plane id="btn-xr-active" class="interactable" control-entorno="modo: xr" width="0.75" height="0.13" color="#111122" position="0 -0.13 0.02" material="shader:flat">
         <a-text value="XR MIXTA" font="exo2bold" align="center" color="#fff" width="1.8"></a-text>
       </a-plane>
     </a-plane>
   </a-entity>
 
-  <!-- NUBE DE TÉRMINOS FLOTANTES (360°) -->
-  <a-entity id="nube-palabras" position="0 0 0" visible="false"
-            animation="property: rotation; to: 0 360 0; loop: true; dur: 75000; easing: linear">
+  <!-- NUBE DE TÉRMINOS FLOTANTES EN 360 GRADOS (Generado de forma automática por JS) -->
+  <a-entity id="nube-palabras" generar-nube position="0 0 0" visible="false" animation="property: rotation; to: 0 360 0; loop: true; dur: 85000; easing: linear"></a-entity>
 
-    <!-- 1. AC -->
-    <a-entity movimiento-vivo position="0 1.7 -3.2">
-      <a-entity imagen-con-fallback="texto: AC; src: #term_ac; w: 1.2; h: 0.4"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_ac"
-               width="1.6" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 2. Arco Eléctrico -->
-    <a-entity movimiento-vivo position="0.80 1.3 -3.10" rotation="0 -14.4 0">
-      <a-entity imagen-con-fallback="texto: Arco electrico; src: #term_arco; w: 1.8; h: 0.6"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_arco"
-               width="2.2" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 3. Baño de Fusión -->
-    <a-entity movimiento-vivo position="1.54 2.0 -2.80" rotation="0 -28.8 0">
-      <a-entity imagen-con-fallback="texto: Bano de fusion; src: #term_bano; w: 1.8; h: 0.6"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_bano"
-               width="2.2" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 4. Cordón -->
-    <a-entity movimiento-vivo position="2.19 1.5 -2.33" rotation="0 -43.2 0">
-      <a-entity imagen-con-fallback="texto: Cordon; src: #term_cordon; w: 1.5; h: 0.5"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_cordon"
-               width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 5. DC -->
-    <a-entity movimiento-vivo position="2.70 1.8 -1.71" rotation="0 -57.6 0">
-      <a-entity imagen-con-fallback="texto: DC; src: #term_dc; w: 1.2; h: 0.4"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_dc"
-               width="1.6" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 6. E6013 -->
-    <a-entity movimiento-vivo position="3.04 1.2 -0.99" rotation="0 -72.0 0">
-      <a-entity imagen-con-fallback="texto: E6013; src: #term_e6013; w: 1.5; h: 0.5"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_e6013"
-               width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 7. E7016 -->
-    <a-entity movimiento-vivo position="3.19 2.2 -0.20" rotation="0 -86.4 0">
-      <a-entity imagen-con-fallback="texto: E7016; src: #term_e7016; w: 1.5; h: 0.5"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_e7016"
-               width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 8. E7018 -->
-    <a-entity movimiento-vivo position="3.14 1.4 0.60" rotation="0 -100.8 0">
-      <a-entity imagen-con-fallback="texto: E7018; src: #term_e7018; w: 1.5; h: 0.5"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_e7018"
-               width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 9. E7024 -->
-    <a-entity movimiento-vivo position="2.90 1.9 1.36" rotation="0 -115.2 0">
-      <a-entity imagen-con-fallback="texto: E7024; src: #term_e7024; w: 1.5; h: 0.5"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_e7024"
-               width="1.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 10. Electrodo -->
-    <a-entity movimiento-vivo position="2.46 1.1 2.04" rotation="0 -129.6 0">
-      <a-entity imagen-con-fallback="texto: Electrodo; src: #term_electrodo; w: 1.8; h: 0.6"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_electrodo"
-               width="2.2" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 11. Escoria -->
-    <a-entity movimiento-vivo position="1.88 2.3 2.59" rotation="0 -144.0 0">
-      <a-entity imagen-con-fallback="texto: Escoria; src: #term_escoria; w: 1.4; h: 0.35"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_escoria"
-               width="1.8" height="0.75" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 12. Higroscópico -->
-    <a-entity movimiento-vivo position="1.18 1.6 2.98" rotation="0 -158.4 0">
-      <a-entity imagen-con-fallback="texto: Higroscopico; src: #term_higroscopico; w: 1.6; h: 0.4"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_higroscopico"
-               width="2.0" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 13. Intensidad de Corriente -->
-    <a-entity movimiento-vivo position="0.40 1.9 3.18" rotation="0 -172.8 0">
-      <a-entity imagen-con-fallback="texto: Intensidad; src: #term_intensidad; w: 2.4; h: 0.6"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_intensidad"
-               width="2.8" height="1.0" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 14. Ionización -->
-    <a-entity movimiento-vivo position="-0.40 1.3 3.18" rotation="0 -187.2 0">
-      <a-entity imagen-con-fallback="texto: Ionizacion; src: #term_ionizacion; w: 1.6; h: 0.4"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_ionizacion"
-               width="2.0" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 15. Masa -->
-    <a-entity movimiento-vivo position="-1.18 2.1 2.98" rotation="0 -201.6 0">
-      <a-entity imagen-con-fallback="texto: Masa; src: #term_masa; w: 1.2; h: 0.3"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_masa"
-               width="1.6" height="0.7" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 16. Penetración -->
-    <a-entity movimiento-vivo position="-1.88 1.5 2.59" rotation="0 -216.0 0">
-      <a-entity imagen-con-fallback="texto: Penetracion; src: #term_penetracion; w: 1.6; h: 0.4"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_penetracion"
-               width="2.0" height="0.8" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 17. Piqueta -->
-    <a-entity movimiento-vivo position="-2.46 2.0 2.04" rotation="0 -230.4 0">
-      <a-entity imagen-con-fallback="texto: Piqueta; src: #term_piqueta; w: 1.4; h: 0.35"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_piqueta"
-               width="1.8" height="0.75" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 18. Plasma -->
-    <a-entity movimiento-vivo position="-2.90 1.2 1.36" rotation="0 -244.8 0">
-      <a-entity imagen-con-fallback="texto: Plasma; src: #term_plasma; w: 1.4; h: 0.35"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_plasma"
-               width="1.8" height="0.75" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 19. Polaridad -->
-    <a-entity movimiento-vivo position="-3.14 2.2 0.60" rotation="0 -259.2 0">
-      <a-entity imagen-con-fallback="texto: Polaridad; src: #term_polaridad; w: 1.5; h: 0.375"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_polaridad"
-               width="1.9" height="0.775" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 20. Polaridad Directa DC- -->
-    <a-entity movimiento-vivo position="-3.19 1.4 -0.20" rotation="0 -273.6 0">
-      <a-entity imagen-con-fallback="texto: Polaridad directa; src: #term_polaridad_directa; w: 2.5; h: 0.5"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_polaridad_directa"
-               width="2.9" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 21. Polaridad Inversa DC+ -->
-    <a-entity movimiento-vivo position="-3.04 1.8 -0.99" rotation="0 -288.0 0">
-      <a-entity imagen-con-fallback="texto: Polaridad inversa; src: #term_polaridad_inversa; w: 2.2; h: 0.5"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_polaridad_inversa"
-               width="2.6" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 22. Revestimiento -->
-    <a-entity movimiento-vivo position="-2.70 1.1 -1.71" rotation="0 -302.4 0">
-      <a-entity imagen-con-fallback="texto: Revestimiento; src: #term_revestimiento; w: 1.8; h: 0.5"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_revestimiento"
-               width="2.2" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 23. Tensión -->
-    <a-entity movimiento-vivo position="-2.19 2.3 -2.33" rotation="0 -316.8 0">
-      <a-entity imagen-con-fallback="texto: Tension; src: #term_tension; w: 1.4; h: 0.5"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_tension"
-               width="1.8" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 24. WPS -->
-    <a-entity movimiento-vivo position="-1.54 1.6 -2.80" rotation="0 -331.2 0">
-      <a-entity imagen-con-fallback="texto: WPS; src: #term_wps; w: 1.2; h: 0.5"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_wps"
-               width="1.6" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-    <!-- 25. ZAT -->
-    <a-entity movimiento-vivo position="-0.80 1.9 -3.10" rotation="0 -345.6 0">
-      <a-entity imagen-con-fallback="texto: ZAT; src: #term_zat; w: 1.2; h: 0.5"></a-entity>
-      <a-plane class="interactable" quest-click-bridge palabra-interactiva="idConcepto: concept_zat"
-               width="1.6" height="0.9" material="opacity: 0; transparent: true" position="0 0 0.01"></a-plane>
-    </a-entity>
-
-  </a-entity><!-- fin nube-palabras -->
-
-  <!-- PANEL DE EXPLICACIÓN DETALLADA -->
-  <a-entity id="panel-info-dinamico" position="0 1.6 -1.8" scale="1 1 1" visible="false">
-    <a-plane width="2.40" height="1.44" color="#000000" opacity="0.8" material="shader: flat">
-      <a-plane width="2.44" height="1.48" color="#e0d070" position="0 0 -0.01" opacity="0.3" material="shader: flat"></a-plane>
-
-      <a-image id="card-contenido-img" src="#fallback" width="2.38" height="1.42"
-               position="0 0 0.01" material="shader: flat; transparent: true;"></a-image>
-
-      <a-text id="panel-fallback-text" value="" visible="false" align="center"
-              color="#ffffff" width="2.1" position="0 0.1 0.02" font="exo2bold"></a-text>
-
-      <!-- FIX #4: botón cerrar usa componente boton-cerrar, sin onclick HTML -->
-      <a-plane class="interactable" quest-click-bridge boton-cerrar
-               width="0.6" height="0.18" color="#992222" position="0 -0.85 0.02"
-               animation__hover="property: scale; to: 1.1 1.1 1.1; dur: 150; startEvents: mouseenter"
-               animation__leave="property: scale; to: 1 1 1; dur: 150; startEvents: mouseleave">
-        <a-text value="CERRAR" font="exo2bold" align="center" color="#ffffff" width="2.2" position="0 0 0.01"></a-text>
-      </a-plane>
+  <!-- PANEL DE EXPLICACIÓN DETALLADA (Frente al Usuario - Generado de forma dinámica mediante Canvas) -->
+  <!-- Modificado a <a-plane> para que tenga geometría física y renderice el material correctamente -->
+  <a-plane id="panel-info-dinamico" 
+           width="2.4" 
+           height="1.2" 
+           canvas-tarjeta="titulo: BIENVENIDO; desc: Selecciona un término flotante en la órbita\npara visualizar su ficha explicativa completa." 
+           position="0 1.6 -1.8" 
+           scale="0.01 0.01 0.01" 
+           visible="false">
+    
+    <!-- Botón de Cierre interactivo (Ajustada su posición para que sobresalga elegantemente en el borde inferior) -->
+    <a-plane class="interactable" 
+             width="0.6" 
+             height="0.18" 
+             color="#992222" 
+             position="0 -0.72 0.02"
+             animation__hover="property: scale; to: 1.1 1.1 1.1; dur: 150; startEvents: mouseenter"
+             animation__leave="property: scale; to: 1 1 1; dur: 150; startEvents: mouseleave"
+             onclick="document.querySelector('#panel-info-dinamico').setAttribute('visible', 'false')">
+      <a-text value="CERRAR" font="exo2bold" align="center" color="#ffffff" width="2.2" position="0 0.01 0.01"></a-text>
     </a-plane>
-  </a-entity>
+  </a-plane>
 
-  <!-- ─────────────────────────────────────────────────────
-       RIG DE CÁMARA Y MANDOS QUEST 3
-       FIX #2: raycaster solo en los laser-controls (no en a-scene)
-       FIX #3: cursor movido a a-camera como hijo (solo para PC)
-       FIX #8: look-controls sin pointerLockEnabled explícito
-       ───────────────────────────────────────────────────── -->
-  <a-entity id="rig" position="0 0 0">
-
-    <a-camera position="0 1.6 0" wasd-controls look-controls>
-      <!-- Cursor solo para PC/navegador (no interfiere con los laser-controls del visor) -->
-      <!-- Cursor de ratón para PC: rayOrigin mouse, detecta .interactable -->
-      <a-cursor
-        id="cursor-pc"
-        raycaster="objects: .interactable; far: 20; rayOrigin: mouse"
-        material="color: #e0d070; shader: flat"
-        geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
-        fuse="false">
-      </a-cursor>
-    </a-camera>
-
-    <!-- Mando izquierdo -->
-    <a-entity
-      laser-controls="hand: left"
-      raycaster="objects: .interactable; far: 10; showLine: true"
-      line="color: #4444aa; opacity: 0.5">
-    </a-entity>
-
-    <!-- Mando derecho -->
-    <a-entity id="control-derecho"
-      laser-controls="hand: right"
-      raycaster="objects: .interactable; far: 10; showLine: true"
-      line="color: #e0d070; opacity: 0.5">
-    </a-entity>
-
+  <!-- RIG DE CÁMARA Y MANDOS QUEST 3 (Configuración completa de controles) -->
+  <a-entity id="rig">
+    <a-camera position="0 1.6 0" wasd-controls look-controls="pointerLockEnabled: false"></a-camera>
+    <a-entity laser-controls="hand:left" raycaster="objects: .interactable; far:10; showLine: true" line="color: #4444aa; opacity: 0.5"></a-entity>
+    <a-entity id="control-derecho" laser-controls="hand:right" raycaster="objects: .interactable; far:10; showLine: true" line="color: #e0d070; opacity: 0.5"></a-entity>
   </a-entity>
 
 </a-scene>
 
 <script>
-  // ─────────────────────────────────────────────────
-  // FIX #6: audio gestionado desde enter-vr
-  //         El botón 2D también lo inicia (modo PC)
-  // ─────────────────────────────────────────────────
-  function reproducirAudio() {
-    var audio = document.getElementById('musica-fondo');
-    if (!audio) return;
-    audio.volume = 0.45;
-    audio.play().catch(function (e) {
-      console.log('Audio: se necesita interacción previa del usuario.', e);
-    });
-  }
+  // Inicialización de música de fondo y desvanecimiento de la pantalla de carga
+  var musica = null;
+  function iniciar() {
+    document.getElementById('pantalla-inicio').style.opacity = '0';
+    
+    // Cargar e iniciar audio de forma totalmente asíncrona mediante JS nativo
+    if (!musica) {
+      musica = new Audio('./orbitaSAN.mp3');
+      musica.loop = true;
+      musica.volume = 0.45;
+    }
+    musica.play().catch(e => console.log("Audio esperando interacción del navegador."));
 
-  function mostrarNube() {
-    document.getElementById('nube-palabras').setAttribute('visible', 'true');
-  }
-
-  // Botón ENTRAR EN MR — activa el modo passthrough (Realidad Mixta) en Quest 3
-  function entrarEnMR() {
-    var scene = document.querySelector('a-scene');
-    iniciarDesdeBoton();
-    setTimeout(function () {
-      // enterAR() activa la sesión WebXR con blend-mode passthrough
-      if (scene.enterAR) {
-        scene.enterAR();
-      } else {
-        // Fallback: enterVR con fondo transparente
-        scene.setAttribute('background', 'transparent: true; color: #000000');
-        scene.setAttribute('fog', 'density: 0');
-        document.querySelector('#estrellas').setAttribute('visible', 'false');
-        scene.enterVR();
-      }
-    }, 400);
-  }
-
-  // Botón ENTRAR EN VR — solicita sesión WebXR inmersiva al visor Quest 3
-  function entrarEnVR() {
-    var scene = document.querySelector('a-scene');
-    if (scene.is('vr-mode')) return;
-    // Iniciamos primero el contenido, luego pedimos la sesión VR
-    iniciarDesdeBoton();
-    setTimeout(function () {
-      scene.enterVR();
-    }, 400);
-  }
-
-  // Botón de la pantalla 2D (acceso desde PC)
-  function iniciarDesdeBoton() {
-    var pantalla = document.getElementById('pantalla-inicio');
-    pantalla.style.opacity = '0';
-    reproducirAudio();
-    setTimeout(function () {
-      pantalla.style.display = 'none';
-      mostrarNube();
+    setTimeout(() => { 
+      document.getElementById('pantalla-inicio').style.display = 'none';
+      document.getElementById('nube-palabras').setAttribute('visible', 'true');
     }, 1000);
   }
 
-  // Entrada directa al visor Quest 3 (sin pasar por la pantalla 2D)
-  // Al entrar en VR desactivamos el cursor de cámara (solo para PC)
-  // y dejamos solo los laser-controls de los mandos Quest 3
-  document.querySelector('a-scene').addEventListener('enter-vr', function () {
-    var camCursor = document.querySelector('a-cursor');
-    if (camCursor) camCursor.setAttribute('visible', false);
-    document.getElementById('pantalla-inicio').style.display = 'none';
-    reproducirAudio();  // FIX #6: audio arranca al entrar en VR
-    mostrarNube();
+  // Generador estético de campo de estrellas 3D
+  function crearEstrellas() {
+    const contenedor = document.getElementById('estrellas');
+    for (let i = 0; i < 250; i++) {
+      const e = document.createElement('a-sphere');
+      const r = 25 + Math.random() * 10;
+      const t = Math.random() * Math.PI * 2;
+      const p = Math.random() * Math.PI;
+      e.setAttribute('position', `${r * Math.sin(p) * Math.cos(t)} ${r * Math.cos(p)} ${r * Math.sin(p) * Math.sin(t)}`);
+      e.setAttribute('radius', 0.02 + Math.random() * 0.04);
+      e.setAttribute('material', 'color: #ffffff; shader: flat');
+      contenedor.appendChild(e);
+    }
+  }
 
-    // Auto-configurar modo XR (passthrough) si el visor inicia en AR
+  // Acceso inmediato si el visor Meta Quest 3 inicia directo en modo VR/XR
+  document.querySelector('a-scene').addEventListener('enter-vr', () => {
+    document.getElementById('pantalla-inicio').style.display = 'none';
+    if (!musica) {
+      musica = new Audio('./orbitaSAN.mp3');
+      musica.loop = true;
+      musica.volume = 0.45;
+    }
+    musica.play().catch(e => {});
+    document.getElementById('nube-palabras').setAttribute('visible', 'true');
+
+    // Auto-activar configuración XR si detectamos que ha entrado específicamente en modo AR (Passthrough)
     var scene = document.querySelector('a-scene');
     if (scene.is('ar-mode')) {
       scene.setAttribute('fog', 'density: 0');
       document.querySelector('#estrellas').setAttribute('visible', 'false');
       scene.setAttribute('background', 'transparent: true; color: #000');
+      
       document.querySelector('#btn-vr-active').setAttribute('color', '#111122');
       document.querySelector('#btn-xr-active').setAttribute('color', '#e0d070');
       document.querySelector('#btn-vr-active').querySelector('a-text').setAttribute('color', '#ffffff');
@@ -734,31 +557,7 @@
     }
   });
 
-  // FIX #9: campo estelar con solo 120 esferas pequeñas (alivia GPU del Quest)
-  function crearEstrellas() {
-    var contenedor = document.getElementById('estrellas');
-    for (var i = 0; i < 120; i++) {
-      var e = document.createElement('a-sphere');
-      var r = 25 + Math.random() * 10;
-      var t = Math.random() * Math.PI * 2;
-      var p = Math.random() * Math.PI;
-      e.setAttribute('position',
-        (r * Math.sin(p) * Math.cos(t)) + ' ' +
-        (r * Math.cos(p))               + ' ' +
-        (r * Math.sin(p) * Math.sin(t))
-      );
-      e.setAttribute('radius', 0.02 + Math.random() * 0.04);
-      e.setAttribute('material', 'color: #ffffff; shader: flat');
-      contenedor.appendChild(e);
-    }
-  }
-
-  document.querySelector('a-scene').addEventListener('exit-vr', function () {
-    var camCursor = document.querySelector('a-cursor');
-    if (camCursor) camCursor.setAttribute('visible', true);
-  });
-
-  window.addEventListener('load', function () {
+  window.addEventListener('load', () => { 
     crearEstrellas();
   });
 </script>
