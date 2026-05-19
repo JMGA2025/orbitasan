@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -17,6 +17,9 @@
     #pantalla-inicio p { color: #bbb; font-size: 1.1rem; margin-bottom: 3rem; line-height: 1.6; max-width: 600px; }
     #btn-entrar { padding: 16px 56px; background: rgba(224, 208, 112, 0.05); border: 1px solid #e0d070; border-radius: 50px; color: #e0d070; font-size: 1.2rem; cursor: pointer; letter-spacing: 3px; transition: all 0.4s ease; box-shadow: 0 0 15px rgba(224, 208, 112, 0.1); }
     #btn-entrar:hover { background: #e0d070; color: #000; box-shadow: 0 0 30px rgba(224, 208, 112, 0.6); transform: scale(1.05); }
+    #btn-vr { padding: 14px 48px; background: rgba(100, 180, 255, 0.05); border: 1px solid #64b4ff; border-radius: 50px; color: #64b4ff; font-size: 1.1rem; cursor: pointer; letter-spacing: 3px; transition: all 0.4s ease; box-shadow: 0 0 15px rgba(100, 180, 255, 0.1); margin-top: 12px; }
+    #btn-vr:hover { background: #64b4ff; color: #000; box-shadow: 0 0 30px rgba(100, 180, 255, 0.6); transform: scale(1.05); }
+    #btn-vr-nativo, #btn-ar-nativo { display: none !important; }
   </style>
 
   <script>
@@ -233,8 +236,13 @@
   <small style="font-size:0.85rem;color:#888;margin-top:10px;display:inline-block;">
     Apunta a las palabras flotantes y pulsa el gatillo de tus mandos de Meta Quest 3,<br>o haz clic en PC.
   </small></p>
-  <button id="btn-entrar" onclick="iniciarDesdeBoton()">ENTRAR</button>
+  <button id="btn-entrar" onclick="iniciarDesdeBoton()">ENTRAR (PC)</button>
+  <button id="btn-vr" onclick="entrarEnVR()">ENTRAR EN VR &#9711;</button>
 </div>
+
+<!-- Botones nativos de A-Frame: ocultos visualmente pero necesarios para la API WebXR -->
+<button id="btn-vr-nativo" style="display:none"></button>
+<button id="btn-ar-nativo" style="display:none"></button>
 
 <!-- ─────────────────────────────────────────────────────
      FIX #1: webxr — requiredFeatures y optionalFeatures correctos
@@ -246,7 +254,7 @@
   fog="type: exponential; color: #000008; density: 0.06"
   renderer="antialias: true; colorManagement: true;"
   webxr="requiredFeatures: local-floor; optionalFeatures: hand-tracking"
-  xr-mode-ui="enabled: false">
+  xr-mode-ui="enabled: true; enterVRButton: #btn-vr-nativo; enterARButton: #btn-ar-nativo">
 
   <!-- FIX #5: timeout subido a 10000 ms para red lenta del visor -->
   <a-assets timeout="10000">
@@ -591,6 +599,17 @@
     document.getElementById('nube-palabras').setAttribute('visible', 'true');
   }
 
+  // Botón ENTRAR EN VR — solicita sesión WebXR inmersiva al visor Quest 3
+  function entrarEnVR() {
+    var scene = document.querySelector('a-scene');
+    if (scene.is('vr-mode')) return;
+    // Iniciamos primero el contenido, luego pedimos la sesión VR
+    iniciarDesdeBoton();
+    setTimeout(function () {
+      scene.enterVR();
+    }, 400);
+  }
+
   // Botón de la pantalla 2D (acceso desde PC)
   function iniciarDesdeBoton() {
     var pantalla = document.getElementById('pantalla-inicio');
@@ -603,7 +622,11 @@
   }
 
   // Entrada directa al visor Quest 3 (sin pasar por la pantalla 2D)
+  // Al entrar en VR desactivamos el cursor de cámara (solo para PC)
+  // y dejamos solo los laser-controls de los mandos Quest 3
   document.querySelector('a-scene').addEventListener('enter-vr', function () {
+    var camCursor = document.querySelector('a-cursor');
+    if (camCursor) camCursor.setAttribute('visible', false);
     document.getElementById('pantalla-inicio').style.display = 'none';
     reproducirAudio();  // FIX #6: audio arranca al entrar en VR
     mostrarNube();
@@ -639,6 +662,11 @@
       contenedor.appendChild(e);
     }
   }
+
+  document.querySelector('a-scene').addEventListener('exit-vr', function () {
+    var camCursor = document.querySelector('a-cursor');
+    if (camCursor) camCursor.setAttribute('visible', true);
+  });
 
   window.addEventListener('load', function () {
     crearEstrellas();
